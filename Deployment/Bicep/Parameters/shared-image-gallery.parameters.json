@@ -6,19 +6,19 @@
           "value": "WestEurope"
       },
       "sigName": {
-          "value": "SigBreeze"
+          "value": "SigMintyBreeze"
       },
       "imagePublisher": {
-          "value": "Rozemuller"
+          "value": "Minty"
       },
       "imageDefinitionName": {
-          "value": "The-Breeze-Deployment"
+          "value": "The-MintyBreeze-Deployment"
       },
       "imageOffer": {
-          "value": "AVD"
+          "value": "Breeze"
       },
       "imageSKU": {
-        "value": "Cocktail"
+        "value": "Deployment"
       },
       "osType": {
         "value": "Windows"
