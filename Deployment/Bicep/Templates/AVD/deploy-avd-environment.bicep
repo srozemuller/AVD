@@ -9,6 +9,7 @@ param applicationgrouptype string
 param preferredAppGroupType string
 param avdlocation string 
 
+
 @description('What is the hostpool type, pooled or personal')
 @allowed([
   'Pooled'
@@ -22,7 +23,7 @@ param hostPoolType string
 ])
 param loadBalancerType string 
 
-//Create WVD Hostpool
+//Create AVD Hostpool
 resource hp 'Microsoft.DesktopVirtualization/hostpools@2019-12-10-preview' = {
   name: hostpoolName
   location: avdlocation
@@ -34,7 +35,7 @@ resource hp 'Microsoft.DesktopVirtualization/hostpools@2019-12-10-preview' = {
   }
 }
 
-//Create WVD AppGroup
+//Create AVD AppGroup
 resource ag 'Microsoft.DesktopVirtualization/applicationgroups@2019-12-10-preview' = {
   name: appgroupName
   location: avdlocation
@@ -45,7 +46,7 @@ resource ag 'Microsoft.DesktopVirtualization/applicationgroups@2019-12-10-previe
   }
 }
 
-//Create WVD Workspace
+//Create AVD Workspace
 resource ws 'Microsoft.DesktopVirtualization/workspaces@2019-12-10-preview' = {
   name: workspaceName
   location: avdlocation
