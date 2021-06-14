@@ -1,7 +1,7 @@
 //define parameters
 param localAdminName string = 'localadmin'
 
-@secure()
+//@secure()
 param localAdminPassword string = concat('P', uniqueString(resourceGroup().id, ''), 'x', '!')
 
 
@@ -75,3 +75,5 @@ resource vm 'Microsoft.Compute/virtualMachines@2019-07-01' = {
     }
   }
 }
+
+output vmPassword string = localAdminPassword

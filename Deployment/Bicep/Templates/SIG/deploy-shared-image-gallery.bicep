@@ -16,6 +16,12 @@ param imageOffer string
 @description('What is the definitions SKU')
 param imageSKU string
 
+@description('On which Hypver-V generation are the images')
+@allowed([
+    'V1'
+    'V2'
+])
+param hyperVGeneration string
 
 @description('What is the definitions offer')
 @allowed([
@@ -31,7 +37,7 @@ param osState string
 ])
 param osType string
 
-//Create Shard Image Gallery
+//Create Shared Image Gallery
 resource wvdsig 'Microsoft.Compute/galleries@2020-09-30' = {
   name: sigName
   location: location
@@ -50,5 +56,6 @@ resource wvdid 'Microsoft.Compute/galleries/images@2020-09-30' = {
       offer: imageOffer
       sku: imageSKU
     }
+    hyperVGeneration: hyperVGeneration
   }
 }

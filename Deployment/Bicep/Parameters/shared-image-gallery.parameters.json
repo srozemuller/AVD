@@ -25,6 +25,9 @@
       },
       "osState": {
         "value": "Generalized"
+      },
+      "hyperVGeneration": {
+          "value": "V2"
       }
   }
 }
