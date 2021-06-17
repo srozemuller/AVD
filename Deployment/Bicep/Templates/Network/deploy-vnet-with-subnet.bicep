@@ -3,6 +3,7 @@ param vnetName string
 param addressPrefix string
 
 param vnetSubnets object
+
 var subnets = [for item in vnetSubnets.subnets: {
   name: item.name
   properties: {

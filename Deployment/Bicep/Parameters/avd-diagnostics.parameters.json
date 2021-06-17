@@ -16,12 +16,24 @@
         },
         "hostpoolLogs": {
             "value": {
-                "categories": ["Checkpoint","Error","Management","Connection","HostRegistration"]
+                "categories": [
+                    "Checkpoint",
+                    "Error",
+                    "Management",
+                    "Connection",
+                    "HostRegistration"
+                ]
             }
         },
-        "workspaceLogs":  {
+        "workspaceLogs": {
             "value": {
-                "categories": ["Checkpoint","Error","Management","Feed"]
+                "categories": [
+                    "Checkpoint",
+                    "Error",
+                    "Management",
+                    "Feed"
+                ]
             }
+        }
     }
 }
