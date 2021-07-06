@@ -1,0 +1,65 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "hostpoolName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the Hostpool to be created."
+            }
+        },
+        "location": {
+            "type": "string",
+            "metadata": {
+                "description": "The location where the resources will be deployed."
+            },
+            "defaultValue": "[resourceGroup().location]"
+        },
+        "tags": {
+            "type": "object",
+            "metadata": {
+                "description": "The tags to be assigned to the images"
+            },
+            "defaultValue": {}
+        },
+        "allApplicationGroupReferences": {
+            "type": "string",
+            "metadata": {
+                "description": "The existing app groups references of the workspace selected."
+            },
+            "defaultValue": ""
+        },
+        "workSpaceName": {
+            "type": "string",
+            "metadata": {
+                "description": "The existing app groups references of the workspace selected."
+            }
+        }
+    },
+    "variables": {
+        "hostpoolName": "[replace(parameters('hostpoolName'),'\"','')]",
+        "appGroupName": "[concat(variables('hostpoolName'),'-DAG')]",
+        "appGroupResourceId": "[createArray(resourceId('Microsoft.DesktopVirtualization/applicationgroups/', variables('appGroupName')))]",
+        "applicationGroupReferencesArr": "[if(equals('',parameters('allApplicationGroupReferences')), variables('appGroupResourceId'), concat(split(parameters('allApplicationGroupReferences'),','), variables('appGroupResourceId')))]"
+    },
+    "resources": [
+        {
+
+            "apiVersion": "2021-03-09-preview",
+            "name": "[parameters('workSpaceName')]",
+            "tags": "[parameters('tags')]",
+            "type": "Microsoft.DesktopVirtualization/workspaces",
+            "location": "[parameters('location')]",
+            "properties": {
+                "applicationGroupReferences": "[variables('applicationGroupReferencesArr')]"
+            },
+            "dependsOn": [
+
+            ]
+        }
+
+    ],
+    "outputs": {
+
+    }
+}

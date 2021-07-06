@@ -1,0 +1,51 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "value": "westeurope"
+        },
+        "hostpoolName": {
+            "value": "Strawberry-Pool"
+        },
+        "galleryResourceGroup": {
+            "value": "RG-ROZ-STRAWBERRYBANANA"
+        },
+        "galleryName":{
+            "value": "Banana_Gallery"
+        },
+        "galleryImageDefinitionName": {
+            "value": "Win10-Multisession"
+        },
+        "vmNamePrefix": {
+            "value": "acsb"
+        },
+        "vmNumberOfInstances": {
+            "value": 1
+        },
+        "vmInitialNumber": {
+            "value": 0
+        },
+        "vmDiskType": {
+            "value": "Premium_LRS"
+        },
+        "vmSize": {
+            "value": "Standard_D2s_v3"
+        },
+        "administratorAccountUsername": {
+            "value": "vmjoiner@domain.local"
+        },
+        "ouPath": {
+            "value": "OU=AVD,OU=Computers,DC=domain,DC=local"
+        },
+        "virtualNetworkResourceGroupName": {
+            "value": "RG-ROZ-STRAWBERRYBANANA"
+        },
+        "existingVnetName": {
+            "value": "vnet-roz-strawberrybanana"
+        },
+        "existingSubnetName": {
+            "value": "AVDBananaSubnet"
+        }
+    }
+}

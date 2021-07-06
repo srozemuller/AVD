@@ -1,0 +1,117 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "galleryName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Shared Image Gallery."
+      }
+    },
+    "galleryImageDefinitionName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Image Definition."
+      }
+    },
+    "osType": {
+      "type": "string",
+      "allowedValues": [
+        "Windows",
+        "Linux"
+      ],
+      "metadata": {
+        "description": "What is the OS Type"
+      }
+    },
+    "osState": {
+      "type": "string",
+      "allowedValues": [
+        "Specialized",
+        "Generalized"
+      ],
+      "metadata": {
+        "description": "What is the OS State"
+      }
+    },
+    "hyperVGeneration": {
+      "type": "string",
+      "allowedValues": [
+        "V1",
+        "V2"
+      ],
+      "metadata": {
+        "description": "description"
+      }
+    },
+    "description": {
+      "type": "string",
+      "metadata": {
+        "description": "The description of this Shared Image Gallery resource."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location of the Shared Image Gallery."
+      }
+    }
+  },
+  "variables": {
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Compute/galleries",
+      "name": "[parameters('galleryName')]",
+      "apiVersion": "2019-12-01",
+      "location": "[parameters('location')]",
+      "properties": {
+        "description": "[parameters('description')]"
+      },
+      "resources": [
+        {
+          "type": "images",
+          "name": "[parameters('galleryImageDefinitionName')]",
+          "apiVersion": "2019-12-01",
+          "location": "[parameters('location')]",
+          "dependsOn": [
+            "[resourceId('Microsoft.Compute/galleries', parameters('galleryName'))]"
+          ],
+          "properties": {
+            "description": "A nice definition with strawberry taste",
+            "osType": "[parameters('osType')]",
+            "osState": "[parameters('osState')]",
+            "endOfLifeDate": "2030-01-01",
+            "identifier": {
+              "publisher": "Strawberry",
+              "offer": "Banana",
+              "sku": "Mix"
+            },
+            "recommended": {
+              "vCPUs": {
+                "min": "1",
+                "max": "64"
+              },
+              "memory": {
+                "min": "2048",
+                "max": "307720"
+              }
+            },
+            "hyperVGeneration": "[parameters('hyperVGeneration')]"  
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": {
+    "galleryName": {
+      "type": "string",
+      "value": "[parameters('galleryName')]"
+    },
+    "galleryImageDefinitionName": {
+      "type": "string",
+      "value": "[parameters('galleryImageDefinitionName')]"
+    }
+  }
+}

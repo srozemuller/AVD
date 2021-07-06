@@ -1,0 +1,272 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "hostpoolName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the Hostpool to be created."
+            }
+        },
+        "hostpoolFriendlyName": {
+            "type": "string",
+            "metadata": {
+                "description": "The friendly name of the Hostpool to be created."
+            },
+            "defaultValue": ""
+        },
+        "hostpoolDescription": {
+            "type": "string",
+            "metadata": {
+                "description": "The description of the Hostpool to be created."
+            },
+            "defaultValue": ""
+        },
+        "resourceGroup": {
+            "type": "string",
+            "metadata": {
+                "description": "The resourceGroup of the Hostpool to be created."
+            },
+            "defaultValue": ""
+        },
+        "createAvailabilitySet": {
+            "type": "bool",
+            "metadata": {
+                "description": "Validation or not"
+            },
+            "defaultValue": "false"
+        },
+        "location": {
+            "type": "string",
+            "metadata": {
+                "description": "The location where the resources will be deployed."
+            },
+            "defaultValue": "resourceGroup().location"
+        },
+        "hostpoolType": {
+            "type": "string",
+            "allowedValues": [
+                "Personal",
+                "Pooled"
+            ],
+            "metadata": {
+                "description": "Set this parameter to Personal if you would like to enable Persistent Desktop experience. Defaults to false."
+            }
+        },
+        "personalDesktopAssignmentType": {
+            "type": "string",
+            "allowedValues": [
+                "Automatic",
+                "Direct",
+                ""
+            ],
+            "metadata": {
+                "description": "Set the type of assignment for a Personal hostpool type"
+            },
+            "defaultValue": ""
+        },
+        "maxSessionLimit": {
+            "type": "int",
+            "metadata": {
+                "description": "Maximum number of sessions."
+            },
+            "defaultValue": 99999
+        },
+        "loadBalancerType": {
+            "type": "string",
+            "allowedValues": [
+                "BreadthFirst",
+                "DepthFirst",
+                "Persistent"
+            ],
+            "metadata": {
+                "description": "Type of load balancer algorithm."
+            },
+            "defaultValue": "BreadthFirst"
+        },
+        "customRdpProperty": {
+            "type": "string",
+            "metadata": {
+                "description": "Hostpool rdp properties"
+            },
+            "defaultValue": ""
+        },
+        "validationEnvironment": {
+            "type": "bool",
+            "metadata": {
+                "description": "Validation or not"
+            },
+            "defaultValue": "false"
+        },
+        "PreferredAppGroupType": {
+            "type": "string",
+            "metadata": {
+                "description": "Desktop"
+            },
+            "defaultValue": "Desktop"
+        },
+        "startVmOnConnect": {
+            "type": "bool",
+            "metadata": {
+                "description": "Start VM's on connect or not"
+            },
+            "defaultValue": "true"
+        },
+        "tags": {
+            "type": "object",
+            "metadata": {
+                "description": "The tags to be assigned to the images"
+            },
+            "defaultValue": {}
+        },
+        "allApplicationGroupReferences": {
+            "type": "string",
+            "metadata": {
+                "description": "The existing app groups references of the workspace selected."
+            },
+            "defaultValue": ""
+        },
+        "addToWorkspace": {
+            "type": "bool",
+            "metadata": {
+                "description": "Start VM's on connect or not"
+            },
+            "defaultValue": "true"
+        },
+        "workSpaceName": {
+            "type": "string",
+            "metadata": {
+                "description": "The existing app groups references of the workspace selected."
+            }
+        },
+        "vmImageType": {
+            "type": "string",
+            "metadata": {
+                "description": "Select the image source for the session host vms. VMs from a Gallery image will be created with Managed Disks."
+            },
+            "defaultValue": "Gallery",
+            "allowedValues": [
+                "CustomVHD",
+                "CustomImage",
+                "Gallery"
+            ]
+        },
+        "vmUseManagedDisks": {
+            "type": "bool",
+            "metadata": {
+                "description": "True indicating you would like to use managed disks or false indicating you would like to use unmanaged disks."
+            },
+            "defaultValue": true
+        }
+    },
+    "variables": {
+        "hostpoolName": "[replace(parameters('hostpoolName'),'\"','')]",
+        "appGroupName": "[concat(variables('hostpoolName'),'-DAG')]",
+        "appGroupResourceId": "[createArray(resourceId('Microsoft.DesktopVirtualization/applicationgroups/', variables('appGroupName')))]",
+        "workspaceResourceGroup": "[if(empty(parameters('resourceGroup')), resourceGroup().name, parameters('resourceGroup'))]",
+        "applicationGroupReferencesArr": "[if(equals('',parameters('allApplicationGroupReferences')), variables('appGroupResourceId'), concat(split(parameters('allApplicationGroupReferences'),','), variables('appGroupResourceId')))]",
+        "rdshManagedDisks": "[if(equals(parameters('vmImageType'), 'CustomVHD'), parameters('vmUseManagedDisks'), bool('true'))]",
+        "avSetSKU": "[if(variables('rdshManagedDisks'), 'Aligned', 'Classic')]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.DesktopVirtualization/hostpools",
+            "apiVersion": "2019-12-10-preview",
+            "name": "[parameters('hostpoolName')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "friendlyName": "[parameters('hostpoolFriendlyName')]",
+                "description": "[parameters('hostpoolDescription')]",
+                "hostpoolType": "[parameters('hostpoolType')]",
+                "customRdpProperty": "[parameters('customRdpProperty')]",
+                "personalDesktopAssignmentType": "[parameters('personalDesktopAssignmentType')]",
+                "maxSessionLimit": "[parameters('maxSessionLimit')]",
+                "loadBalancerType": "[parameters('loadBalancerType')]",
+                "validationEnvironment": "[parameters('validationEnvironment')]",
+                "PreferredAppGroupType": "[parameters('PreferredAppGroupType')]",
+                "startVmOnConnect": "[parameters('startVmOnConnect')]"
+            }
+        },
+        {
+            "name": "[variables('appGroupName')]",
+            "apiVersion": "2019-12-10-preview",
+            "type": "Microsoft.DesktopVirtualization/applicationgroups",
+            "location": "[parameters('location')]",
+            "tags": "[parameters('tags')]",
+            "properties": {
+                "hostpoolarmpath": "[resourceId('Microsoft.DesktopVirtualization/hostpools/', parameters('hostpoolName'))]",
+                "friendlyName": "Default Desktop",
+                "description": "Desktop Application Group created through the Hostpool Wizard",
+                "applicationGroupType": "Desktop"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.DesktopVirtualization/hostpools/', parameters('hostpoolName'))]"
+            ]
+        },
+        {
+            "apiVersion": "2018-05-01",
+            "name": "[concat('Workspace-linkedTemplate-', parameters('hostpoolName'))]",
+            "type": "Microsoft.Resources/deployments",
+            "resourceGroup": "[variables('workspaceResourceGroup')]",
+            "condition": "[parameters('addToWorkspace')]",
+            "properties": {
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "resources": [
+                        {
+                            "apiVersion": "2018-05-01",
+                            "name": "[parameters('workSpaceName')]",
+                            "type": "Microsoft.DesktopVirtualization/workspaces",
+                            "location": "[parameters('location')]",
+                            "properties": {
+                                "applicationGroupReferences": "[variables('applicationGroupReferencesArr')]"
+                            }
+                        }
+                    ]
+                }
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.DesktopVirtualization/applicationgroups/', variables('appGroupName'))]"
+            ]
+        },
+        {
+            "apiVersion": "2018-05-01",
+            "name": "[concat('AVD-deploy-', parameters('hostpoolName'))]",
+            "type": "Microsoft.Resources/deployments",
+            "resourceGroup": "[parameters('resourceGroup')]",
+            "condition": "[parameters('createAvailabilitySet')]",
+            "properties": {
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "resources": [
+                        {
+                            "apiVersion": "2018-10-01",
+                            "type": "Microsoft.Compute/availabilitySets",
+                            "name": "[concat(variables('hostpoolName'), 'availabilitySet-', parameters('location'))]",
+                            "location": "[parameters('location')]",
+                            "tags": "[parameters('tags')]",
+                            "properties": {
+                                "platformUpdateDomainCount": 5,
+                                "platformFaultDomainCount": 2
+                            },
+                            "sku": {
+                                "name": "[variables('avSetSKU')]"
+                            }
+                        }
+                    ]
+                }
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.DesktopVirtualization/applicationgroups', variables('appGroupName'))]"
+            ]
+        }
+
+    ],
+    "outputs": {
+
+    }
+}

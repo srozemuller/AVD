@@ -1,0 +1,39 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "value": "westeurope"
+        },
+        "nsgId": {
+            "value": ""
+        },
+        "NetworkResourceGroupName": {
+            "value": ""
+        },
+        "subnetName": {
+            "value": "AVDBananaSubnet"
+        },
+        "virtualNetworkName": {
+            "value": ""
+        },
+        "osDiskType": {
+            "value": "Premium_LRS"
+        },
+        "DiskSizeGb": {
+            "value": 128
+        },
+        "virtualMachineSize": {
+            "value": "Standard_D2s_v3"
+        },
+        "virtualMachineName": {
+            "value": "vm-banana"
+        },
+        "vmGalleryImageSKU": {
+            "value": "20h2-ent-g2"
+        },
+        "vmGalleryImageOffer": {
+            "value": "Windows-10"
+        }
+    }
+}

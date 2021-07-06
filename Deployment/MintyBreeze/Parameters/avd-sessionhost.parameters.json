@@ -1,0 +1,60 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "value": "westeurope"
+        },
+        "hostpoolName": {
+            "value": "MintyBreeze-Hostpool"
+        },
+        "availabilityOption": {
+            "value": "None"
+        },
+        "availabilitySetName": {
+            "value": "BreezeSet"
+        },
+        "availabilityZone": {
+            "value": 1
+        },
+        "galleryResourceGroup": {
+            "value": "RG-ROZ-MINTYBREEZE-COCKTAIL"
+        },
+        "galleryName":{
+            "value": "SigMintyBreeze"
+        },
+        "galleryImageDefinitionName": {
+            "value": "The-MintyBreeze-Deployment"
+        },
+        "rdshPrefix": {
+            "value": "acmb"
+        },
+        "rdshNumberOfInstances": {
+            "value": 1
+        },
+        "vmInitialNumber": {
+            "value": 2
+        },
+        "rdshVMDiskType": {
+            "value": "Premium_LRS"
+        },
+        "rdshVmSize": {
+            "value": "Standard_D2s_v3"
+        },
+        "administratorAccountUsername": {
+            "value": "vmjoiner@rozemuller.local"
+        },
+        "ouPath": {
+            "value": "OU=Computers,OU=WVD,DC=rozemuller,DC=local"
+        },
+        "vnetResourceGroup": {
+            "value": "RG-ROZ-MINTYBREEZE-COCKTAIL"
+        },
+        "vnetName": {
+            "value": "vnet-roz-mintybreeze"
+        },
+        "subnetName": {
+            "value": "AVDBreezeSubnet"
+        }
+    }
+}

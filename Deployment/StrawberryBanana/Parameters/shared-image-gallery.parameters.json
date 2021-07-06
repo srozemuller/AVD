@@ -1,0 +1,24 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "galleryName": {
+            "value": "Banana_Gallery"
+        },
+        "galleryImageDefinitionName": {
+            "value": "Win10-Multisession"
+        },
+        "description": {
+            "value": "Nice banana's and fresh strawberries in here"
+        },
+        "osType": {
+            "value": "Windows"
+        },
+        "osState": {
+            "value": "Generalized"
+        },
+        "hyperVGeneration": {
+            "value": "V2"
+        }
+    }
+}

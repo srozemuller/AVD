@@ -1,0 +1,146 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "hostpoolName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the Hostpool to be created."
+            }
+        },
+        "hostpoolFriendlyName": {
+            "type": "string",
+            "metadata": {
+                "description": "The friendly name of the Hostpool to be created."
+            },
+            "defaultValue": ""
+        },
+        "hostpoolDescription": {
+            "type": "string",
+            "metadata": {
+                "description": "The description of the Hostpool to be created."
+            },
+            "defaultValue": ""
+        },
+        "location": {
+            "type": "string",
+            "metadata": {
+                "description": "The location where the resources will be deployed."
+            },
+            "defaultValue": "[resourceGroup().location]"
+        },
+        "hostpoolType": {
+            "type": "string",
+            "allowedValues": [
+                "Personal",
+                "Pooled"
+            ],
+            "metadata": {
+                "description": "Set this parameter to Personal if you would like to enable Persistent Desktop experience. Defaults to false."
+            }
+        },
+        "tokenExpirationTime": {
+            "type" : "string"
+        },
+        "personalDesktopAssignmentType": {
+            "type": "string",
+            "allowedValues": [
+                "Automatic",
+                "Direct",
+                ""
+            ],
+            "metadata": {
+                "description": "Set the type of assignment for a Personal hostpool type"
+            },
+            "defaultValue": ""
+        },
+        "maxSessionLimit": {
+            "type": "int",
+            "metadata": {
+                "description": "Maximum number of sessions."
+            },
+            "defaultValue": 99999
+        },
+        "loadBalancerType": {
+            "type": "string",
+            "allowedValues": [
+                "BreadthFirst",
+                "DepthFirst",
+                "Persistent"
+            ],
+            "metadata": {
+                "description": "Type of load balancer algorithm."
+            },
+            "defaultValue": "BreadthFirst"
+        },
+        "customRdpProperty": {
+            "type": "string",
+            "metadata": {
+                "description": "Hostpool rdp properties"
+            },
+            "defaultValue": ""
+        },
+        "validationEnvironment": {
+            "type": "bool",
+            "metadata": {
+                "description": "Validation or not"
+            },
+            "defaultValue": false
+        },
+        "PreferredAppGroupType": {
+            "type": "string",
+            "metadata": {
+                "description": "Desktop"
+            },
+            "defaultValue": "Desktop"
+        },
+        "startVmOnConnect": {
+            "type": "bool",
+            "metadata": {
+                "description": "Start VM's on connect or not"
+            },
+            "defaultValue": true
+        }
+    },
+    "variables": {
+    },
+    "resources": [
+        {
+            "type": "Microsoft.DesktopVirtualization/hostpools",
+            "apiVersion": "2019-12-10-preview",
+            "name": "[parameters('hostpoolName')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "friendlyName": "[parameters('hostpoolFriendlyName')]",
+                "description": "[parameters('hostpoolDescription')]",
+                "hostpoolType": "[parameters('hostpoolType')]",
+                "customRdpProperty": "[parameters('customRdpProperty')]",
+                "personalDesktopAssignmentType": "[parameters('personalDesktopAssignmentType')]",
+                "maxSessionLimit": "[parameters('maxSessionLimit')]",
+                "loadBalancerType": "[parameters('loadBalancerType')]",
+                "validationEnvironment": "[parameters('validationEnvironment')]",
+                "PreferredAppGroupType": "[parameters('PreferredAppGroupType')]",
+                "startVmOnConnect": "[parameters('startVmOnConnect')]",
+                "registrationInfo": {
+                    "expirationTime": "[parameters('tokenExpirationTime')]",
+                    "token": null,
+                    "registrationTokenOperation": "Update"
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "hostpoolName": {
+            "type": "string",
+            "value": "[parameters('hostpoolName')]"
+        },
+        "hostpoolResourceId": {
+            "type": "string",
+            "value": "[resourceId('Microsoft.DesktopVirtualization/hostpools', parameters('hostpoolName'))]"
+        },
+        "hostpoolToken": {
+            "type": "string",
+            "value": "[reference(parameters('hostpoolName')).registrationInfo.token]"
+        }
+    }
+}

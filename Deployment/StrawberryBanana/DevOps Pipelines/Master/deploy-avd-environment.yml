@@ -1,0 +1,385 @@
+trigger: none
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  - group: StrawberryVariables
+  - name: location
+    value: 'West Europe'
+  - name: subscriptionId
+    value : 'xxxx-xx-xx-xx-xx'
+  - name: serviceConnection
+    value: "ConnectionName"
+
+resources:
+  repositories:
+  - repository: Rozemuller
+    type: git
+    name: Rozemuller/Rozemuller
+
+# Deploy Resource Groups
+jobs:
+- job: DeployRG
+  displayName: Deploying Resouregroup
+  steps:
+  - task: AzureResourceManagerTemplateDeployment@3
+    name: DeployResourceGroup
+    displayName: 'Deploy Resouregroup Configuration in $(location)'
+    enabled: true
+    inputs:
+      deploymentScope: 'Subscription'
+      azureResourceManagerConnection: $(serviceConnection)
+      subscriptionId: $(subscriptionId)
+      location: $(location)
+      templateLocation: 'Linked artifact'
+      csmFile: '$(Build.SourcesDirectory)/StrawberryBanana/Templates/ResourceGroups/deploy-resourcegroup.json'
+      csmParametersFile: '$(Build.SourcesDirectory)/StrawberryBanana/Parameters/resourcegroup.parameters.json'
+      deploymentMode: 'Incremental'
+      deploymentOutputs: 'rgOutput'
+  - template: 'StrawberryBanana/DevOps Pipelines/Templates/create-pipelinevariables.yml@Rozemuller'
+    parameters:
+      taskName: 'rgDeploy'
+      ArmOutputString: '$(rgOutput)'
+      variablePrefix: rgDeploy
+
+# Deploy Network Security Group
+- job: DeployNSG
+  dependsOn: DeployRG
+  displayName: Deploying Network Security Group
+  variables: 
+      resourceGroupName: $[ dependencies.DeployRG.outputs['rgDeploy.rgName'] ]
+  steps: 
+    - bash: echo "the variable value is $(resourceGroupName)"
+    - task: AzureResourceManagerTemplateDeployment@3
+      name: DeployNSG
+      displayName: 'Deploy Network Security Group'
+      enabled: true
+      inputs:
+        deploymentScope: 'Resource Group'
+        azureResourceManagerConnection: $(serviceConnection)
+        subscriptionId: $(subscriptionId)
+        action: 'Create Or Update Resource Group'
+        resourceGroupName: $(resourceGroupName)
+        location: $(location)
+        templateLocation: 'Linked artifact'
+        csmFile: '$(Build.SourcesDirectory)/StrawberryBanana/Templates/Network/deploy-nsg.json'
+        csmParametersFile: '$(Build.SourcesDirectory)/StrawberryBanana/Parameters/network-nsg.parameters.json'
+        deploymentMode: 'Incremental'
+        deploymentOutputs: 'nsgOutput'
+    - template: 'StrawberryBanana/DevOps Pipelines/Templates/create-pipelinevariables.yml@Rozemuller'
+      parameters:
+        taskName: 'nsgDeploy'
+        ArmOutputString: '$(nsgOutput)'
+        variablePrefix: nsgDeploy
+
+# Deploy VNET Configuration including subnets
+- job: DeployVnet
+  dependsOn: 
+    - DeployNSG
+    - DeployRG
+  displayName: Deploying Network and Subnets
+  variables: 
+      resourceGroupName: $[ dependencies.DeployRG.outputs['rgDeploy.rgName'] ]
+      nsgId: $[ dependencies.DeployNSG.outputs['nsgDeploy.nsgId'] ]
+  steps: 
+    - bash: echo "the variable value is $(resourceGroupName)"
+    - task: AzureResourceManagerTemplateDeployment@3
+      name: DeployNSG
+      displayName: 'Deploy VNET Configuration including subnets'
+      enabled: true
+      inputs:
+        deploymentScope: 'Resource Group'
+        azureResourceManagerConnection: $(serviceConnection)
+        subscriptionId: $(subscriptionId)
+        action: 'Create Or Update Resource Group'
+        resourceGroupName: $(resourceGroupName)
+        location: $(location)
+        templateLocation: 'Linked artifact'
+        csmFile: '$(Build.SourcesDirectory)/StrawberryBanana/Templates/Network/deploy-network.json'
+        csmParametersFile: '$(Build.SourcesDirectory)/StrawberryBanana/Parameters/network-with-subnet.parameters.json'
+        overrideParameters: '-nsgId $(nsgId)'
+        deploymentMode: 'Incremental'
+        deploymentOutputs: 'vnetOutput'
+    - template: 'StrawberryBanana/DevOps Pipelines/Templates/create-pipelinevariables.yml@Rozemuller'
+      parameters:
+        taskName: 'vnetDeploy'
+        ArmOutputString: '$(vnetOutput)'
+        variablePrefix: vnetDeploy
+# Deploy Shared Image Gallery Configuration
+- job: DeploySig
+  dependsOn: 
+    - DeployRG
+  displayName: Deploying Shared Image Gallery
+  variables: 
+      resourceGroupName: $[ dependencies.DeployRG.outputs['rgDeploy.rgName'] ]
+  steps: 
+    - bash: echo "the variable value is $(resourceGroupName)"
+    - task: AzureResourceManagerTemplateDeployment@3
+      name: DeploySIG
+      displayName: 'Deploy SIG Configuration including definition'
+      enabled: true
+      inputs:
+        deploymentScope: 'Resource Group'
+        azureResourceManagerConnection: $(serviceConnection)
+        subscriptionId: $(subscriptionId)
+        action: 'Create Or Update Resource Group'
+        resourceGroupName: $(resourceGroupName)
+        location: $(location)
+        templateLocation: 'Linked artifact'
+        csmFile: '$(Build.SourcesDirectory)/StrawberryBanana/Templates/SharedImageGallery/deploy-sig.json'
+        csmParametersFile: '$(Build.SourcesDirectory)/StrawberryBanana/Parameters/shared-image-gallery.parameters.json'
+        deploymentMode: 'Incremental'
+        deploymentOutputs: 'sigOutput'
+    - template: 'StrawberryBanana/DevOps Pipelines/Templates/create-pipelinevariables.yml@Rozemuller'
+      parameters:
+        taskName: 'sigDeploy'
+        ArmOutputString: '$(sigOutput)'
+        variablePrefix: sigDeploy
+# Deploy Virtual Machine Configuration
+- job: DeployVm
+  dependsOn: 
+    - DeployRG
+    - DeployVnet
+    - DeployNSG
+  displayName: Deploying intial VM
+  variables: 
+      resourceGroupName: $[ dependencies.DeployRG.outputs['rgDeploy.rgName'] ]
+      nsgId: $[ dependencies.DeployNSG.outputs['nsgDeploy.nsgId'] ]
+      virtualNetworkName: $[ dependencies.DeployVnet.outputs['vnetDeploy.vnetName'] ]
+  steps: 
+    - bash: echo "the variable value is $(avdSubnet)"
+    - task: AzureResourceManagerTemplateDeployment@3
+      name: DeployVM
+      displayName: 'Deploy Initial VM'
+      enabled: true
+      inputs:
+        deploymentScope: 'Resource Group'
+        azureResourceManagerConnection: $(serviceConnection)
+        subscriptionId: $(subscriptionId)
+        action: 'Create Or Update Resource Group'
+        resourceGroupName: $(resourceGroupName)
+        location: $(location)
+        templateLocation: 'Linked artifact'
+        csmFile: '$(Build.SourcesDirectory)/StrawberryBanana/Templates/Compute/deploy-vm.json'
+        csmParametersFile: '$(Build.SourcesDirectory)/StrawberryBanana/Parameters/vm.parameters.json'
+        overrideParameters: '-nsgId $(nsgId) -NetworkResourceGroupName $(resourceGroupName) -virtualNetworkName $(virtualNetworkName)'
+        deploymentMode: 'Incremental'
+        deploymentOutputs: 'vmOutput'
+    - template: 'StrawberryBanana/DevOps Pipelines/Templates/create-pipelinevariables.yml@Rozemuller'
+      parameters:
+        taskName: 'vmDeploy'
+        ArmOutputString: '$(vmOutput)'
+        variablePrefix: vmDeploy
+# Prepare Virtual Machine for Sysprep
+- job: PrepareVM
+  dependsOn: 
+    - DeployVM
+  displayName: Preparing VM for sysprep and generalizing
+  variables: 
+      vmName: $[ dependencies.DeployVM.outputs['vmDeploy.virtualMachineName'] ]
+  steps: 
+  - task: AzurePowerShell@5
+    name: Execute_Sysprep
+    displayName: Execute Sysprep on $(vmName)
+    inputs:
+      azureSubscription: 'CloudMedics'
+      ScriptType: 'InlineScript'
+      Inline: |
+        $vm = Get-AzVM -Name $(vmName)
+        $vm | Invoke-AzVMRunCommand -CommandId "RunPowerShellScript" -ScriptPath '$(Build.SourcesDirectory)/StrawberryBanana/PowerShell/sysprep.ps1'
+      azurePowerShellVersion: 'LatestVersion'
+      pwsh: true
+  - task: AzurePowerShell@5
+    name: Execute_Generalize
+    displayName: Generalizing $(vmName)
+    inputs:
+      azureSubscription: 'CloudMedics'
+      ScriptType: 'InlineScript'
+      Inline: |
+        Write-Host "Giving $(vmName) 30 seconds to shutdown"
+        Start-Sleep 30
+        $vm = Get-AzVM -Name $(vmName)
+        $vm | Set-AzVm -Generalized
+      azurePowerShellVersion: 'LatestVersion'
+      pwsh: true
+
+# Creating new SIG Version
+- job: DeploySigVersion
+  dependsOn: 
+    - DeployRG
+    - DeployVM
+    - DeploySig
+    - PrepareVM
+  displayName: Preparing image version
+  variables: 
+    resourceGroupName: $[ dependencies.DeployRG.outputs['rgDeploy.rgName'] ]
+    vmId: $[ dependencies.DeployVM.outputs['vmDeploy.resourceId'] ]
+    major: $(Get-Date -format yyyy)  
+    minor: $(Get-Date -format MMdd)  
+    patch: $[counter(variables['minor'], 0)]
+    galleryName: $[ dependencies.DeploySig.outputs['sigDeploy.galleryName'] ]
+    galleryImageDefinitionName: $[ dependencies.DeploySig.outputs['sigDeploy.galleryImageDefinitionName'] ]
+  steps: 
+  - powershell: |
+       write-host "##vso[task.setvariable variable=galleryImageVersionName;isOutput=true]$(major).$(minor).$(patch)"
+    name: CreateImageVersionName
+  - bash: echo "the version value is $(CreateImageVersionName.galleryImageVersionName)" 
+  - task: AzureResourceManagerTemplateDeployment@3
+    name: DeployVersion
+    displayName: 'Deploy Initial Version'
+    enabled: true
+    inputs:
+      deploymentScope: 'Resource Group'
+      azureResourceManagerConnection: $(serviceConnection)
+      subscriptionId: $(subscriptionId)
+      action: 'Create Or Update Resource Group'
+      resourceGroupName: $(resourceGroupName)
+      location: $(location)
+      templateLocation: 'Linked artifact'
+      csmFile: '$(Build.SourcesDirectory)/StrawberryBanana/Templates/SharedImageGallery/deploy-sig-version.json'
+      overrideParameters: '-sourceId $(vmId) -galleryName $(galleryName) -galleryImageDefinitionName $(galleryImageDefinitionName) -galleryImageVersionName $(CreateImageVersionName.galleryImageVersionName)'
+      deploymentMode: 'Incremental'
+      deploymentOutputs: 'versionOutput'
+  - template: 'StrawberryBanana/DevOps Pipelines/Templates/create-pipelinevariables.yml@Rozemuller'
+    parameters:
+      taskName: 'versionDeploy'
+      ArmOutputString: '$(versionOutput)'
+      variablePrefix: versionDeploy
+# Creating AVD Environment
+- job: DeployAVDEnvironment
+  dependsOn: 
+    - DeployRG
+  displayName: Deploying AVD Environment
+  variables: 
+    resourceGroupName: $[ dependencies.DeployRG.outputs['rgDeploy.rgName'] ]
+  steps: 
+  - powershell: |
+       $time = $($(Get-Date).AddHours(4))
+       write-host "##vso[task.setvariable variable=hostpoolTokenTime;isOutput=true]$time"
+    name: tokenExpirationTime
+  - bash: echo 'new token time is $(tokenExpirationTime.hostpoolTokenTime)'
+  - task: AzureResourceManagerTemplateDeployment@3
+    name: DeployAVDHostpool
+    displayName: 'Deploy AVD Host pool'
+    enabled: true
+    inputs:
+      deploymentScope: 'Resource Group'
+      azureResourceManagerConnection: $(serviceConnection)
+      subscriptionId: $(subscriptionId)
+      action: 'Create Or Update Resource Group'
+      resourceGroupName: $(resourceGroupName)
+      location: $(location)
+      templateLocation: 'Linked artifact'
+      csmFile: '$(Build.SourcesDirectory)/StrawberryBanana/Templates/AVD/deploy-avd-hostpool.json'
+      csmParametersFile: '$(Build.SourcesDirectory)/StrawberryBanana/Parameters/avd-hostpool.parameters.json'
+      overrideParameters: '-tokenExpirationTime "$(tokenExpirationTime.hostpoolTokenTime)"'
+      deploymentMode: 'Incremental'
+      deploymentOutputs: 'avdHostpoolOutput'
+  - template: 'StrawberryBanana/DevOps Pipelines/Templates/create-pipelinevariables.yml@Rozemuller'
+    parameters:
+      taskName: 'hostpoolDeploy'
+      ArmOutputString: '$(avdHostpoolOutput)'
+      variablePrefix: hostpoolDeploy
+  - task: AzureResourceManagerTemplateDeployment@3
+    name: DeployAVDAppGroup
+    displayName: 'Deploy AVD Application group'
+    enabled: true
+    inputs:
+      deploymentScope: 'Resource Group'
+      azureResourceManagerConnection: $(serviceConnection)
+      subscriptionId: $(subscriptionId)
+      action: 'Create Or Update Resource Group'
+      resourceGroupName: $(resourceGroupName)
+      location: $(location)
+      templateLocation: 'Linked artifact'
+      csmFile: '$(Build.SourcesDirectory)/StrawberryBanana/Templates/AVD/deploy-avd-appgroup.json'
+      overrideParameters: '-hostpoolName $(hostpoolDeploy.hostpoolName)'
+      deploymentMode: 'Incremental'
+      deploymentOutputs: 'avdAppgroupOutput'
+  - task: AzureResourceManagerTemplateDeployment@3
+    name: DeployAVDWorkspace
+    displayName: 'Deploy AVD Workspace'
+    enabled: true
+    inputs:
+      deploymentScope: 'Resource Group'
+      azureResourceManagerConnection: $(serviceConnection)
+      subscriptionId: $(subscriptionId)
+      action: 'Create Or Update Resource Group'
+      resourceGroupName: $(resourceGroupName)
+      location: $(location)
+      templateLocation: 'Linked artifact'
+      csmFile: '$(Build.SourcesDirectory)/StrawberryBanana/Templates/AVD/deploy-avd-workspace.json'
+      overrideParameters: '-hostpoolName $(hostpoolDeploy.hostpoolName) -workSpaceName $(hostpoolDeploy.hostpoolName)-Workspace'
+      deploymentMode: 'Incremental'
+      deploymentOutputs: 'avdWorkspaceOutput'
+  - task: AzureResourceManagerTemplateDeployment@3
+    name: DeployAVDAvailabililtySet
+    displayName: 'Deploy AVD Availabililty Set'
+    enabled: true
+    inputs:
+      deploymentScope: 'Resource Group'
+      azureResourceManagerConnection: $(serviceConnection)
+      subscriptionId: $(subscriptionId)
+      action: 'Create Or Update Resource Group'
+      resourceGroupName: $(resourceGroupName)
+      location: $(location)
+      templateLocation: 'Linked artifact'
+      csmFile: '$(Build.SourcesDirectory)/StrawberryBanana/Templates/AVD/deploy-avd-availabilitySet.json'
+      overrideParameters: '-hostpoolName $(hostpoolDeploy.hostpoolName)'
+      deploymentMode: 'Incremental'
+      deploymentOutputs: 'avdWorkspaceOutput'
+  - task: AzureResourceManagerTemplateDeployment@3
+    name: DeployAVDDiagnostics
+    displayName: 'Deploy AVD Diagnostics'
+    enabled: true
+    inputs:
+      deploymentScope: 'Resource Group'
+      azureResourceManagerConnection: $(serviceConnection)
+      subscriptionId: $(subscriptionId)
+      action: 'Create Or Update Resource Group'
+      resourceGroupName: $(resourceGroupName)
+      location: $(location)
+      templateLocation: 'Linked artifact'
+      csmFile: '$(Build.SourcesDirectory)/StrawberryBanana/Templates/AVD/deploy-avd-diagnostics.json'
+      csmParametersFile: '$(Build.SourcesDirectory)/StrawberryBanana/Parameters/avd-diagnostics.parameters.json'
+      overrideParameters: '-hostpoolName $(hostpoolDeploy.hostpoolName)'
+      deploymentMode: 'Incremental'
+      deploymentOutputs: 'avdWorkspaceOutput'
+# Creating first AVD Session host
+- job: DeployAVDSessionHost
+  dependsOn: 
+    - DeployRG
+    - DeploySig
+    - DeploySigVersion
+    - DeployAVDEnvironment
+    - DeployVnet
+  displayName: Deploying First AVD Session Host
+  variables: 
+    resourceGroupName: $[ dependencies.DeployRG.outputs['rgDeploy.rgName'] ]
+    hostpoolToken: $[ dependencies.DeployAVDEnvironment.outputs['hostpoolDeploy.hostpoolToken'] ]
+    domainPassword: $(vmjoinerPassword)
+    galleryImageVersionName: $[ dependencies.DeploySigVersion.outputs['versionDeploy.galleryImageVersion'] ]
+  steps: 
+  - task: AzureResourceManagerTemplateDeployment@3
+    name: DeployAVDSessionHost
+    displayName: 'Deploy AVD Host pool'
+    enabled: true
+    inputs:
+      deploymentScope: 'Resource Group'
+      azureResourceManagerConnection: $(serviceConnection)
+      subscriptionId: $(subscriptionId)
+      action: 'Create Or Update Resource Group'
+      resourceGroupName: $(resourceGroupName)
+      location: $(location)
+      templateLocation: 'Linked artifact'
+      csmFile: '$(Build.SourcesDirectory)/StrawberryBanana/Templates/AVD/deploy-avd-sessionhosts.json'
+      csmParametersFile: '$(Build.SourcesDirectory)/StrawberryBanana/Parameters/avd-sessionhost.parameters.json'
+      deploymentMode: 'Incremental'
+      deploymentOutputs: 'avdHostOutput'
+      overrideParameters: '-administratorAccountPassword $(vmjoinerPassword) -hostpoolToken $(hostpoolToken) -galleryImageVersionName $(galleryImageVersionName)'
+  - template: 'StrawberryBanana/DevOps Pipelines/Templates/create-pipelinevariables.yml@Rozemuller'
+    parameters:
+      taskName: 'hostDeploy'
+      ArmOutputString: '$(avdHostOutput)'
+      variablePrefix: hostDeploy

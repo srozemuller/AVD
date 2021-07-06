@@ -1,0 +1,42 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "hostpoolName": {
+            "value": "Strawberry-Pool"
+        },
+        "hostpoolFriendlyName": {
+            "value": "Strawberry and bananas pool"
+        },
+        "hostpoolDescription": {
+            "value": "A pool of strawberries"
+        },
+        "hostpoolType": {
+            "value": "Personal"
+        },
+        "personalDesktopAssignmentType": {
+            "value": ""
+        },
+        "tokenExpirationTime": {
+            "value": ""
+        },
+        "maxSessionLimit": {
+            "value": 10
+        },
+        "loadBalancerType": {
+            "value": "BreadthFirst"
+        },
+        "customRdpProperty": {
+            "value": ""
+        },
+        "validationEnvironment": {
+            "value": false
+        },
+        "PreferredAppGroupType": {
+            "value": "Desktop"
+        },
+        "startVmOnConnect": {
+            "value": true
+        }
+    }
+}

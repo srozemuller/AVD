@@ -1,0 +1,108 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "NSGName": {
+            "type": "string",
+            "metadata": {
+                "description": "This is the name of the network security group"
+            }
+        },
+        "NSGlocation": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]",
+            "metadata": {
+                "description": "Location where the network security group resource will be created."
+            }
+        },
+        "tags": {
+            "type": "object",
+            "defaultValue": {}
+        },
+        "networkSecurityGroupSettings": {
+            "type": "object"
+        }
+    },
+    "resources": [
+        {
+            "apiVersion": "2019-11-01",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "name": "[parameters('NSGName')]",
+            "location": "[parameters('NSGlocation')]",
+            "tags": "[parameters('tags')]",
+            "properties": {
+                "securityRules": []
+            }
+        },
+        {
+            "apiVersion": "2019-10-01",
+            "type": "Microsoft.Resources/deployments",
+            "name": "loop-0",
+            "dependsOn": [
+                "[parameters('NSGName')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "parameters": {},
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {},
+                    "variables": {},
+                    "resources": [],
+                    "outputs": {}
+                }
+            }
+        },
+        {
+            "apiVersion": "2019-10-01",
+            "type": "Microsoft.Resources/deployments",
+            "name": "[concat('loop-', copyIndex(1))]",
+            "dependsOn": [
+                "[concat('loop-', copyIndex())]"
+            ],
+            "copy": {
+                "name": "iterator",
+                "count": "[length(parameters('networkSecurityGroupSettings').securityRules)]"
+            },
+            "properties": {
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {},
+                    "variables": {},
+                    "resources": [
+                        {
+                            "name": "[concat(parameters('NSGName') , '/' , parameters('networkSecurityGroupSettings').securityRules[copyIndex()].name)]",
+                            "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+                            "apiVersion": "2019-11-01",
+                            "location": "[resourceGroup().location]",
+                            "properties": {
+                                "description": "[parameters('networkSecurityGroupSettings').securityRules[copyIndex()].description]",
+                                "priority": "[parameters('networkSecurityGroupSettings').securityRules[copyIndex()].priority]",
+                                "protocol": "[parameters('networkSecurityGroupSettings').securityRules[copyIndex()].protocol]",
+                                "sourcePortRange": "[parameters('networkSecurityGroupSettings').securityRules[copyIndex()].sourcePortRange]",
+                                "destinationPortRange": "[parameters('networkSecurityGroupSettings').securityRules[copyIndex()].destinationPortRange]",
+                                "sourceAddressPrefix": "[parameters('networkSecurityGroupSettings').securityRules[copyIndex()].sourceAddressPrefix]",
+                                "destinationAddressPrefix": "[parameters('networkSecurityGroupSettings').securityRules[copyIndex()].destinationAddressPrefix]",
+                                "access": "[parameters('networkSecurityGroupSettings').securityRules[copyIndex()].access]",
+                                "direction": "[parameters('networkSecurityGroupSettings').securityRules[copyIndex()].direction]"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "NSGName": {
+            "type": "string",
+            "value": "[parameters('NSGName')]"
+        },
+        "nsgId": {
+            "type": "string",
+            "value": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('NSGName'))]"
+        }
+    }
+}

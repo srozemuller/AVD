@@ -1,0 +1,95 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]"
+        },
+        "nsgId": {
+            "type": "string"
+        },
+        "vnetName": {
+            "type": "string"
+        },
+        "addressPrefix": {
+            "type": "string"
+        },
+        "vnetSubnets": {
+            "type": "array"
+        },
+        "dnsServers": {
+            "type": "array"
+        }
+    },
+    "variables": {
+    },
+    "resources": [
+        {
+            "apiVersion": "2017-05-10",
+            "name": "[concat('Deploy-',parameters('vnetName'))]",
+            "type": "Microsoft.Resources/deployments",
+            "properties": {
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                    },
+                    "variables": {
+                    },
+                    "resources": [
+                        {
+                            "apiVersion": "2017-10-01",
+                            "type": "Microsoft.Network/virtualNetworks/",
+                            "name": "[parameters('vnetName')]",
+                            "location": "[parameters('location')]",
+                            "properties": {
+                                "addressSpace": {
+                                    "addressPrefixes": [
+                                        "[parameters('addressPrefix')]"
+                                    ]
+                                },
+                                "dhcpOptions" :{
+                                    "dnsServers" : "[parameters('dnsServers')]"
+                                },                                
+                                "copy": [
+                                    {
+                                        "name": "subnets",
+                                        "count": "[length(parameters('vnetSubnets'))]",
+                                        "input": {
+                                            "name": "[parameters('vnetSubnets')[copyIndex('subnets')].name]",
+                                            "properties": {
+                                                "addressPrefix": "[parameters('vnetSubnets')[copyIndex('subnets')].addressPrefix]",
+                                                "networkSecurityGroup": {
+                                                    "id": "[parameters('nsgId')]"
+                                                }
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "vnetName": {
+            "type": "string",
+            "value": "[parameters('vnetName')]"
+        },
+        "subnets": {
+            "type": "array",
+            "copy": {
+                "count": "[length(parameters('vnetSubnets'))]",
+                "input": {
+                    "type": "string",
+                    "name": "[parameters('vnetSubnets')[copyIndex()].name]",
+                    "value": "[concat(resourceId('Microsoft.Network/virtualNetworks',parameters('vnetName')), '/subnets/', parameters('vnetSubnets')[copyIndex()].name)]"
+                }
+            }
+        }
+    }
+}

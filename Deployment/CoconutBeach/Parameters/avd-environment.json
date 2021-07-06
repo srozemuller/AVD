@@ -1,0 +1,39 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "hostpoolName": {
+            "value": "CoconutBeach-Hostpool"
+        },
+        "hostpoolFriendlyName": {
+            "value": "A nice coconut on a sunny beach"
+        },
+        "appgroupName": {
+            "value": "CoconutApps"
+        },
+        "appgroupNameFriendlyName": {
+            "value": "Apps with a lot of sand"
+        },
+        "workspaceName": {
+            "value": "CoconutBeach"
+        },
+        "workspaceNameFriendlyName":{
+            "value": "A nice sunny workspace"
+        },
+        "applicationgrouptype": {
+            "value": "Desktop"
+        },
+        "preferredAppGroupType": {
+            "value": "Desktop"
+        },
+        "avdlocation": {
+            "value": "westeurope"
+        },
+        "hostPoolType": {
+            "value": "Pooled"
+        },
+        "loadBalancerType": {
+            "value": "BreadthFirst"
+        }
+    }
+}
