@@ -7,7 +7,7 @@ steps:
 - task: AzurePowerShell@5
   name: ${{ parameters.taskName }}
   inputs:
-    azureSubscription: 'CloudMedics'
+    azureSubscription: ''
     ScriptType: 'InlineScript'
     Inline: |
       function Convert-ArmOutputToPsObject {
