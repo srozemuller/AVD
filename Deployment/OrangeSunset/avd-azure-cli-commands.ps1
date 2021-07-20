@@ -17,8 +17,8 @@ $deploySigDefinition = az sig image-definition create --gallery-image-definition
 --resource-group $resourceGroupName --os-type Windows --hyper-v-generation V2 `
 --offer Orange --publisher Sweet --sku Sunset
 
-$image = az vm image list --publisher MicrosoftWindowsDesktop --sku 21h1-evd-g2 --all
-$lastImage = ($image | ConvertFrom-Json)[-1]
+$initialImage = az vm image list --publisher MicrosoftWindowsDesktop --sku 21h1-evd-g2 --all
+$lastImage = ($initialImage | ConvertFrom-Json)[-1]
 
 $subnet = $deployAvdSubnet | ConvertFrom-Json
 $deployVm = az vm create --name orange-vm --resource-group $resourceGroupName --image $lastImage.urn `
