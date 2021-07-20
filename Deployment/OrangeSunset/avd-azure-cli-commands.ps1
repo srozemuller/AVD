@@ -90,7 +90,7 @@ $avdExtensionSetting = '{""modulesUrl"": ""'+$moduleLocation+'"",""Configuration
 Do {
     $vmName = $avdPrefix+"$initialNumber"
     az vm create --name $vmName --resource-group $resourceGroupName --image $image.id --size $vmSize --vnet-name $vnet.newVNet.name --subnet $subnet.name --admin-username $VMLocalAdminUser --admin-password $adminpassword --public-ip-address '""' --nsg '""'
-    az vm identity assign --name $vmName --resource-group $resourceGroupName --identities System
+    az vm identity assign --name $vmName --resource-group $resourceGroupName
     az vm extension set --vm-name $vmName --resource-group $resourceGroupName --name $domainJoinName --publisher $domainJoinPublisher --version $domainJoinVersion --settings $domainJoinSettings
     az vm extension set --vm-name $vmName --resource-group $resourceGroupName --name $avdExtensionName --publisher $avdExtensionPublisher --version $avdExtensionVersion --settings $avdExtensionSetting
 
