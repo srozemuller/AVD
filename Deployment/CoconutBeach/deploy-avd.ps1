@@ -229,15 +229,15 @@ Do {
         Type               = "DSC" 
         Publisher          = "Microsoft.Powershell"
         typeHandlerVersion = "2.73"
-        SettingString      = '{
-            "modulesUrl":"https://wvdportalstorageblob.blob.core.windows.net/galleryartifacts/Configuration.zip",
-            "ConfigurationFunction":"Configuration.ps1\\AddSessionHost",
-            "Properties": {
-                "hostPoolName": "'+ $($avdHostpool.Name) + '",
-                "registrationInfoToken": "'+ $($registrationToken.token) + '"
-                "aadJoin" : "'+$false+'"
+        SettingString      = "{
+            ""modulesUrl"":'$avdModuleLocation',
+            ""ConfigurationFunction"":""Configuration.ps1\\AddSessionHost"",
+            ""Properties"": {
+                ""hostPoolName"": '$avdHostpool.Name)',
+                ""registrationInfoToken"":'$registrationToken.token)',
+                ""aadJoin"": false
             }
-        }'
+        }"
         VMName             = $VMName
         ResourceGroupName  = $resourceGroupName
         location           = $Location
