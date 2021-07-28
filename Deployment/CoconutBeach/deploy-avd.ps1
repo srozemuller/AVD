@@ -233,9 +233,9 @@ Do {
             ""modulesUrl"":'$avdModuleLocation',
             ""ConfigurationFunction"":""Configuration.ps1\\AddSessionHost"",
             ""Properties"": {
-                ""hostPoolName"": '$($avdHostpool.Name)',
-                ""registrationInfoToken"":'$($registrationToken.token)',
-                ""aadJoin"": false
+                ""hostPoolName"": ""$($fileParameters.avdSettings.avdHostpool.Name)"",
+                ""registrationInfoToken"": ""$($registrationToken.token)"",
+                ""aadJoin"": true
             }
         }"
         VMName             = $VMName
