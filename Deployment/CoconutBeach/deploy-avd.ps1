@@ -233,8 +233,8 @@ Do {
             ""modulesUrl"":'$avdModuleLocation',
             ""ConfigurationFunction"":""Configuration.ps1\\AddSessionHost"",
             ""Properties"": {
-                ""hostPoolName"": '$avdHostpool.Name)',
-                ""registrationInfoToken"":'$registrationToken.token)',
+                ""hostPoolName"": '$($avdHostpool.Name)',
+                ""registrationInfoToken"":'$($registrationToken.token)',
                 ""aadJoin"": false
             }
         }"
