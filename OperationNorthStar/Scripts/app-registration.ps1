@@ -159,7 +159,7 @@ function Consent-ApplicationPermissions {
     )
     $date = Get-Date
     $SpInfo = Get-ServicePrincipal -AppDisplayName $AppDisplayName
-    $url = "$($script:mainUrl)/oauth2PermissionGrants"
+    $url = "$($script:mainUrl)/oauth2PermissionGrants/"
     $body = @{
         clientId    = $SpInfo.Id
         consentType = "AllPrincipals"
@@ -174,6 +174,4 @@ function Consent-ApplicationPermissions {
     return $appPermissions
 }
 
-Consent-ApplicationPermissions -AppDisplayName "MEM Configurator" -ResourceId "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70" -Scope "Directory.ReadWrite.All"
-Consent-ApplicationPermissions -AppDisplayName "MEM Configurator" -ResourceId "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70" -Scope "Group.ReadWrite.All"
-Consent-ApplicationPermissions -AppDisplayName "MEM Configurator" -ResourceId "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70" -Scope "DeviceManagementConfiguration.ReadWrite.All"
+Consent-ApplicationPermissions -AppDisplayName "MEM Configurator" -ResourceId "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70" -Scope "User.Read Directory.ReadWrite.All Group.ReadWrite.All DeviceManagementConfiguration.ReadWrite.All"
