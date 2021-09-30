@@ -112,9 +112,9 @@ function Create-SPFromApp {
     (
         [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
-        [string]$AppDisplayName
+        [string]$AppId
     )
-    $appInfo = Get-Application -AppDisplayName $AppDisplayName
+    $appInfo = Get-Application -AppId $AppId
     $url = "$($script:mainUrl)/servicePrincipals"
     $body = @{
         appId = $appInfo.appId
@@ -123,17 +123,17 @@ function Create-SPFromApp {
     $servicePrincipal = Invoke-RestMethod -Uri $url -Method POST -Body $postBody -Headers $script:token
     return $servicePrincipal
 }
-Create-SPFromApp -AppDisplayName 'MEM Configurator'
+$newSp = Create-SPFromApp -AppId $newApp.id
 
 function Add-SPDelegatedPermissions {
     param
     (
         [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
-        [string]$AppDisplayName
+        [string]$PrincipalId
     )
     $spInfo = Get-ServicePrincipal -AppDisplayName $AppDisplayName
-    $url = "$($script:mainUrl)/servicePrincipals/$($spInfo.id)/delegatedPermissionClassifications"
+    $url = $($script:mainUrl)+ "/servicePrincipals/" + $PrincipalId + "/delegatedPermissionClassifications"
     $body = @{
         permissionId   = "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70"
         permissionName = "DeviceManagementConfiguration.ReadWrite.All"
@@ -143,7 +143,7 @@ function Add-SPDelegatedPermissions {
     return $spPermissions
 }
 
-Add-SPDelegatedPermissions -AppDisplayName $AppDisplayName
+Add-SPDelegatedPermissions -PrincipalId $newSp.id
 
 function Consent-ApplicationPermissions {
     param
