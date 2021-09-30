@@ -6,9 +6,9 @@ function Get-Application {
     (
         [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
-        [string]$AppDisplayName
+        [string]$appId
     )
-    $url = "$($script:mainUrl)/applications?`$filter=displayName eq '$($AppDisplayName)'"
+    $url = "$($script:mainUrl)/applications?`$filter=appId eq '$($appId)'"
     $appInfo = (Invoke-RestMethod -Uri $url -Method GET -Headers $script:token).value
     return $appInfo
 }
@@ -64,13 +64,13 @@ function Add-ApplicationPermissions {
     (
         [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
-        [string]$AppDisplayName,
+        [string]$appId,
         [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
         [object]$permissions
 
     )
-    $appInfo = Get-Application -AppDisplayName $AppDisplayName
+    $appInfo = Get-Application -AppId $appId
     $url = "$($script:mainUrl)/applications/$($appInfo.id)"
     $body = @{
         requiredResourceAccess = @(
@@ -98,14 +98,15 @@ $permissions = @{
             type = "Scope"
         },
         @{
-            id   = "0883f392-0a7a-443d-8c76-16a6d39c7b63"
+            id   = "44642bfe-8385-4adc-8fc6-fe3cb2c375c3"
             type = "Scope"
         }
     )
 }
 
+$newApp = Create-Application -AppDisplayName "MEM Configurator"
 
-Add-ApplicationPermissions -AppDisplayName $newApp.displayName -permissions $permissions 
+Add-ApplicationPermissions -AppId $newApp.appId -permissions $permissions 
 function Create-SPFromApp {
     param
     (
@@ -159,7 +160,7 @@ function Consent-ApplicationPermissions {
     )
     $date = Get-Date
     $SpInfo = Get-ServicePrincipal -AppDisplayName $AppDisplayName
-    $url = "$($script:mainUrl)/oauth2PermissionGrants/"
+    $url = "$($script:mainUrl)/oauth2PermissionGrants"
     $body = @{
         clientId    = $SpInfo.Id
         consentType = "AllPrincipals"
@@ -174,4 +175,6 @@ function Consent-ApplicationPermissions {
     return $appPermissions
 }
 
-Consent-ApplicationPermissions -AppDisplayName "MEM Configurator" -ResourceId "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70" -Scope "User.Read Directory.ReadWrite.All Group.ReadWrite.All DeviceManagementConfiguration.ReadWrite.All"
+Consent-ApplicationPermissions -AppDisplayName "MEM Configurator" -ResourceId "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70" -Scope "Directory.ReadWrite.All"
+Consent-ApplicationPermissions -AppDisplayName "MEM Configurator" -ResourceId "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70" -Scope "Group.ReadWrite.All"
+Consent-ApplicationPermissions -AppDisplayName "MEM Configurator" -ResourceId "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70" -Scope "DeviceManagementManagedDevices.ReadWrite.All"
