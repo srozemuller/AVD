@@ -8,7 +8,7 @@ function Get-Application {
         [ValidateNotNullOrEmpty()]
         [string]$appId
     )
-    $url = "$($script:mainUrl)/applications?`$filter=appId eq '$($appId)'"
+    $url = $script:mainUrl+ "/applications?`$filter=appId eq '$($appId)'"
     $appInfo = (Invoke-RestMethod -Uri $url -Method GET -Headers $script:token).value
     return $appInfo
 }
@@ -18,20 +18,20 @@ function Get-ServicePrincipal {
     (
         [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
-        [string]$appDisplayName
+        [string]$appId
     )
-    $url = "$($script:mainUrl)/servicePrincipals?`$filter=displayName eq '$($appDisplayName)'"
+    $url = $script:mainUrl + "/servicePrincipals?`$filter=appId eq '$($appId)'"
     $servicePrincipalInfo = (Invoke-RestMethod -Uri $url -Method GET -Headers $script:token).value
     return $servicePrincipalInfo
 }
-function Create-Application {
+function New-Application {
     param
     (
         [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
         [string]$AppDisplayName
     )
-    $url = "$($script:mainUrl)/applications"
+    $url = $script:mainUrl + "/applications"
     $body = @{
         displayName = $AppDisplayName
     }
@@ -40,15 +40,14 @@ function Create-Application {
     return $newApp
 }
 
-function Create-ApplicationPassword {
+function New-ApplicationPassword {
     param
     (
         [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
-        [string]$AppDisplayName
+        [string]$AppId
     )
-    $appInfo = Get-Application -AppDisplayName $AppDisplayName
-    $url = "$($script:mainUrl)/applications/$($appInfo.id)/addPassword"
+    $url = $script:mainUrl + "/applications/"+ $AppId + "/addPassword"
     $body = @{
         passwordCredential = @{
             displayName = 'AppPassword'
@@ -70,8 +69,7 @@ function Add-ApplicationPermissions {
         [object]$permissions
 
     )
-    $appInfo = Get-Application -AppId $appId
-    $url = "$($script:mainUrl)/applications/$($appInfo.id)"
+    $url = $($script:mainUrl) + "/applications/" + $appId
     $body = @{
         requiredResourceAccess = @(
             $permissions
@@ -79,6 +77,67 @@ function Add-ApplicationPermissions {
     }
     $postBody = $body | ConvertTo-Json -Depth 5 
     $appPermissions = Invoke-RestMethod -Uri $url -Method PATCH -Body $postBody -Headers $script:token -ContentType "application/json"
+    return $appPermissions
+}
+
+function New-SPFromApp {
+    param
+    (
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [string]$AppId
+    )
+    $url = "$($script:mainUrl)/servicePrincipals"
+    $body = @{
+        appId = $AppId
+    }
+    $postBody = $body | ConvertTo-Json
+    $servicePrincipal = Invoke-RestMethod -Uri $url -Method POST -Body $postBody -Headers $script:token
+    return $servicePrincipal
+}
+
+function Add-SPDelegatedPermissions {
+    param
+    (
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [string]$ServicePrincipalId
+    )
+    $url = $($script:mainUrl) + "/servicePrincipals/"+ $ServicePrincipalId +"/delegatedPermissionClassifications"
+    $body = @{
+        permissionId   = "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70"
+        permissionName = "DeviceManagementConfiguration.ReadWrite.All"
+    }
+    $postBody = $body | ConvertTo-Json
+    $spPermissions = Invoke-RestMethod -Uri $url -Method POST -Body $postBody -Headers $script:token
+    return $spPermissions
+}
+function Consent-ApplicationPermissions {
+    param
+    (
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [string]$ServicePrincipalId,
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [string]$ResourceId,
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Scope
+    )
+    $date = Get-Date
+    $url = $($script:mainUrl) + "/oauth2PermissionGrants"
+    $body = @{
+        clientId    = $ServicePrincipalId
+        consentType = "AllPrincipals"
+        principalId = $null
+        resourceId  = $ResourceId
+        scope       = $Scope
+        startTime   = $date
+        expiryTime  = $date
+    }
+    $postBody = $body | ConvertTo-Json
+    $appPermissions = Invoke-RestMethod -Uri $url -Method POST -Body $postBody -Headers $script:token
     return $appPermissions
 }
 
@@ -104,77 +163,11 @@ $permissions = @{
     )
 }
 
-$newApp = Create-Application -AppDisplayName "MEM Configurator"
-
+$newApp = New-Application -AppDisplayName "MEM Configurator"
 Add-ApplicationPermissions -AppId $newApp.appId -permissions $permissions 
-function Create-SPFromApp {
-    param
-    (
-        [Parameter(Mandatory)]
-        [ValidateNotNullOrEmpty()]
-        [string]$AppId
-    )
-    $appInfo = Get-Application -AppId $AppId
-    $url = "$($script:mainUrl)/servicePrincipals"
-    $body = @{
-        appId = $appInfo.appId
-    }
-    $postBody = $body | ConvertTo-Json
-    $servicePrincipal = Invoke-RestMethod -Uri $url -Method POST -Body $postBody -Headers $script:token
-    return $servicePrincipal
-}
-$newSp = Create-SPFromApp -AppId $newApp.id
+$newSp = New-SPFromApp -AppId $newApp.appId 
+Add-SPDelegatedPermissions -ServicePrincipalId $newSp.id
 
-function Add-SPDelegatedPermissions {
-    param
-    (
-        [Parameter(Mandatory)]
-        [ValidateNotNullOrEmpty()]
-        [string]$PrincipalId
-    )
-    $spInfo = Get-ServicePrincipal -AppDisplayName $AppDisplayName
-    $url = $($script:mainUrl)+ "/servicePrincipals/" + $PrincipalId + "/delegatedPermissionClassifications"
-    $body = @{
-        permissionId   = "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70"
-        permissionName = "DeviceManagementConfiguration.ReadWrite.All"
-    }
-    $postBody = $body | ConvertTo-Json
-    $spPermissions = Invoke-RestMethod -Uri $url -Method POST -Body $postBody -Headers $script:token
-    return $spPermissions
-}
-
-Add-SPDelegatedPermissions -PrincipalId $newSp.id
-
-function Consent-ApplicationPermissions {
-    param
-    (
-        [Parameter(Mandatory)]
-        [ValidateNotNullOrEmpty()]
-        [string]$AppDisplayName,
-        [Parameter(Mandatory)]
-        [ValidateNotNullOrEmpty()]
-        [string]$ResourceId,
-        [Parameter(Mandatory)]
-        [ValidateNotNullOrEmpty()]
-        [string]$Scope
-    )
-    $date = Get-Date
-    $SpInfo = Get-ServicePrincipal -AppDisplayName $AppDisplayName
-    $url = "$($script:mainUrl)/oauth2PermissionGrants"
-    $body = @{
-        clientId    = $SpInfo.Id
-        consentType = "AllPrincipals"
-        principalId = $null
-        resourceId  = $ResourceId
-        scope       = $Scope
-        startTime   = $date
-        expiryTime  = $date
-    }
-    $postBody = $body | ConvertTo-Json
-    $appPermissions = Invoke-RestMethod -Uri $url -Method POST -Body $postBody -Headers $script:token
-    return $appPermissions
-}
-
-Consent-ApplicationPermissions -AppDisplayName "MEM Configurator" -ResourceId "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70" -Scope "Directory.ReadWrite.All"
-Consent-ApplicationPermissions -AppDisplayName "MEM Configurator" -ResourceId "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70" -Scope "Group.ReadWrite.All"
-Consent-ApplicationPermissions -AppDisplayName "MEM Configurator" -ResourceId "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70" -Scope "DeviceManagementManagedDevices.ReadWrite.All"
+Consent-ApplicationPermissions -ServicePrincipalId $newSp.id -ResourceId "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70" -Scope "Directory.ReadWrite.All"
+Consent-ApplicationPermissions -ServicePrincipalId $newSp.id -ResourceId "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70" -Scope "Group.ReadWrite.All"
+Consent-ApplicationPermissions -ServicePrincipalId $newSp.id -ResourceId "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70" -Scope "DeviceManagementManagedDevices.ReadWrite.All"
