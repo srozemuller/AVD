@@ -151,6 +151,28 @@ function Consent-ApplicationPermissions {
     return $appPermissions
 }
 
+function Assign-AppRole {
+    param
+    (
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [string]$PrincipalId,
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [object]$appRoleId
+
+    )
+    $url = $($script:mainUrl) + "/servicePrincipals/" + $PrincipalId + "/appRoleAssignments"
+    $body = @{
+        principalId = $PrincipalId
+        resourceId  = "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70"
+        appRoleId   = $appRoleId
+    }
+    $roles = Invoke-RestMethod -Uri $url -Method POST -Headers $script:token -Body $($body | ConvertTo-Json)
+    $roles.value
+}
+
+
 $permissions = @{
     resourceAppId  = "00000003-0000-0000-c000-000000000000"
     resourceAccess = @(
@@ -177,11 +199,12 @@ $permissions = @{
     )
 }
 
+
 $newApp = New-Application -AppDisplayName "MEM Configurator3"
 Add-ApplicationPermissions -AppId $newApp.Id -permissions $permissions 
 $newSp = New-SPFromApp -AppId $newApp.AppId 
 Consent-ApplicationPermissions -ServicePrincipalId $newSp.id -ResourceId "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70" -Scope "User.Read Directory.ReadWrite.All Group.ReadWrite.All DeviceManagementConfiguration.ReadWrite.All DeviceManagementManagedDevices.ReadWrite.All"
-
+Assign-AppRole -
 
 $url = $($script:mainUrl) + "/servicePrincipals/"+ $newSp.id  +"/appRoleAssignments"
 $body = @{
