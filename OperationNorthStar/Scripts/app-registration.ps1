@@ -1,6 +1,16 @@
 $script:token = GetAuthToken -resource 'https://graph.microsoft.com' 
 $script:mainUrl = "https://graph.microsoft.com/beta"
 
+function GetAuthToken($resource) {
+    $context = [Microsoft.Azure.Commands.Common.Authentication.Abstractions.AzureRmProfileProvider]::Instance.Profile.DefaultContext
+    $Token = [Microsoft.Azure.Commands.Common.Authentication.AzureSession]::Instance.AuthenticationFactory.Authenticate($context.Account, $context.Environment, $context.Tenant.Id.ToString(), $null, [Microsoft.Azure.Commands.Common.Authentication.ShowDialog]::Never, $null, $resource).AccessToken
+    $authHeader = @{
+        'Content-Type' = 'application/json'
+        Authorization  = 'Bearer ' + $Token
+    }
+    return $authHeader
+}
+
 function Get-Application {
     param
     (
@@ -76,7 +86,7 @@ function Add-ApplicationPermissions {
         )
     }
     $postBody = $body | ConvertTo-Json -Depth 5 
-    $appPermissions = Invoke-RestMethod -Uri $url -Method PATCH -Body $postBody -Headers $script:token -ContentType "application/json"
+    $appPermissions = Invoke-RestMethod -Uri $url -Method POST -Body $postBody -Headers $script:token -ContentType "application/json"
     return $appPermissions
 }
 
@@ -106,7 +116,7 @@ function Add-SPDelegatedPermissions {
     $url = $($script:mainUrl) + "/servicePrincipals/"+ $ServicePrincipalId +"/delegatedPermissionClassifications"
     $body = @{
         permissionId   = "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70"
-        permissionName = "DeviceManagementConfiguration.ReadWrite.All"
+        permissionName = "User.Read"
     }
     $postBody = $body | ConvertTo-Json
     $spPermissions = Invoke-RestMethod -Uri $url -Method POST -Body $postBody -Headers $script:token
@@ -157,17 +167,27 @@ $permissions = @{
             type = "Scope"
         },
         @{
-            id   = "44642bfe-8385-4adc-8fc6-fe3cb2c375c3"
-            type = "Scope"
+            id   = "243333ab-4d21-40cb-a475-36241daa0842"
+            type = "Role"
+        },
+        @{
+            id   = "9241abd9-d0e6-425a-bd4f-47ba86e767a4"
+            type = "Role"
         }
     )
 }
 
-$newApp = New-Application -AppDisplayName "MEM Configurator"
-Add-ApplicationPermissions -AppId $newApp.appId -permissions $permissions 
-$newSp = New-SPFromApp -AppId $newApp.appId 
-Add-SPDelegatedPermissions -ServicePrincipalId $newSp.id
+$newApp = New-Application -AppDisplayName "MEM Configurator3"
+Add-ApplicationPermissions -AppId $newApp.Id -permissions $permissions 
+$newSp = New-SPFromApp -AppId $newApp.AppId 
+Consent-ApplicationPermissions -ServicePrincipalId $newSp.id -ResourceId "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70" -Scope "User.Read Directory.ReadWrite.All Group.ReadWrite.All DeviceManagementConfiguration.ReadWrite.All DeviceManagementManagedDevices.ReadWrite.All"
 
-Consent-ApplicationPermissions -ServicePrincipalId $newSp.id -ResourceId "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70" -Scope "Directory.ReadWrite.All"
-Consent-ApplicationPermissions -ServicePrincipalId $newSp.id -ResourceId "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70" -Scope "Group.ReadWrite.All"
-Consent-ApplicationPermissions -ServicePrincipalId $newSp.id -ResourceId "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70" -Scope "DeviceManagementManagedDevices.ReadWrite.All"
+
+$url = $($script:mainUrl) + "/servicePrincipals/"+ $newSp.id  +"/appRoleAssignments"
+$body = @{
+    principalId   =  $newSp.id 
+    resourceId =  "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70"
+    appRoleId = "9241abd9-d0e6-425a-bd4f-47ba86e767a4"
+}
+$roles = Invoke-RestMethod -Uri $url -Method POST -Headers $script:token -Body $($body |ConvertTo-Json)
+$roles.value
