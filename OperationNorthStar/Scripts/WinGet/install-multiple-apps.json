@@ -1,0 +1,16 @@
+{
+    "applications" : {
+        "7zip" : {
+            "version" : "1.0.0",
+            "installMode" : "silent",
+            "forceIntall" : true,
+            "scope": "machine"
+        },
+        "GoogleChrome" : {
+            "version" : "1.0.0",
+            "installMode" : "interactive",
+            "forceIntall" : true,
+            "scope": "machine"
+        } 
+    }
+}
