@@ -1,15 +1,22 @@
 [CmdletBinding(DefaultParameterSetName = 'Single')]
 param
 (
-    [parameter(Mandatory, ParameterSetName = 'Single',Position=0)]
+    [parameter(Mandatory, ParameterSetName = 'Single', Position = 0)]
+    [validateSet("Install", "Uninstall")]
+    [string]$task,
+
+    [parameter(Mandatory, ParameterSetName = 'Single', Position = 1)]
     [string]$AppName,
 
-    [parameter(Mandatory, ParameterSetName = 'Single',Position=1)]
+    [parameter(Mandatory, ParameterSetName = 'Single', Position = 2)]
     [string]$AppVersion,
-
     
-    [parameter(Mandatory, ParameterSetName = 'Single',Position=2)]
-    [string]$Source
+    [parameter(ParameterSetName = 'Single', Position = 3)]
+    [string]$Source = "WinGet",
+
+    [parameter(ParameterSetName = 'Single', Position = 4)]
+    [string]$logFilePath = "C:\AppDeployment"
+
 )
 
 Begin {
@@ -19,18 +26,24 @@ Begin {
             $installParameters = @{
                 "--name"    = $AppName
                 "--version" = $AppVersion
-                "--source" = $Source
+                "--source"  = $Source
+                "--log" = $logFilePath + "\" + $AppName + ".log"
             }
         }
         Multiple {
 
         }
     }
+    $switchArguments = "--silent --accept-package-agreements --accept-source-agreements"
 }
 Process {
+    if (-not(Test-Path $logFilePath)){
+        Write-Warning "Folder $logfilePath does not exist, creating it."
+        mkdir $logFilePath
+    }
     $arguments = ($installParameters.GetEnumerator() | Sort-Object Name | ForEach-Object { "$($_.Name) $($_.Value)" }) -join " "
     $argString = $arguments.ToString()
-    Write-Warning "Winget install $argString"
-    Invoke-Expression -Command "winget install $($arguments.ToString())"
+    Write-Warning "Winget $task $argString $switchArguments"
+    Invoke-Expression -Command "winget $task $($arguments.ToString()) $switchArguments"
 }
 
