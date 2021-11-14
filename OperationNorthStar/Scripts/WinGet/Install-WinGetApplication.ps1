@@ -42,10 +42,10 @@ Process {
         Write-Warning "Folder $logfilePath does not exist, creating it."
         mkdir $logFilePath
     }
-    Write-Output "Winget $task $argString $switchArguments" | -OutFile 
+    Write-Output "Winget $task $argString $switchArguments" | OutFile $logFile
     $arguments = ($installParameters.GetEnumerator() | Sort-Object Name | ForEach-Object { "$($_.Name) $($_.Value)" }) -join " "
     $argString = $arguments.ToString()
     Write-Warning "Winget $task $argString $switchArguments"
-    Invoke-Expression -Command "winget $task $($arguments.ToString()) $switchArguments"
+    Invoke-Expression -Command "cmd /c winget $task $($arguments.ToString()) $switchArguments"
 }
 
