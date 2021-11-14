@@ -27,13 +27,14 @@ Begin {
                 "--name"    = $AppName
                 "--version" = $AppVersion
                 "--source"  = $Source
-                "--log" = $logFilePath + "\" + $AppName + ".log"
+                "--log" = $logFile
             }
         }
         Multiple {
 
         }
     }
+    $logFile = $logFilePath + "\" + $AppName + ".log"
     $switchArguments = "--silent --accept-package-agreements --accept-source-agreements"
 }
 Process {
@@ -41,6 +42,7 @@ Process {
         Write-Warning "Folder $logfilePath does not exist, creating it."
         mkdir $logFilePath
     }
+    Write-Output "Winget $task $argString $switchArguments" | -OutFile 
     $arguments = ($installParameters.GetEnumerator() | Sort-Object Name | ForEach-Object { "$($_.Name) $($_.Value)" }) -join " "
     $argString = $arguments.ToString()
     Write-Warning "Winget $task $argString $switchArguments"
