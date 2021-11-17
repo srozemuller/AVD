@@ -24,16 +24,6 @@ param
 )
 
 Begin {
-    if (-not(Test-Path $logFilePath)) {
-        New-Item -ItemType Directory -Path $logFilePath
-    }
-    if (-not(Test-Path $AppWorkingPath)) {
-        $AppWorkingPath = (New-Item -ItemType Directory -Path $($logFilePath + "\" + $AppName)).FullName
-    }
-    else {
-        $AppWorkingPath = $($logFilePath + "\" + $AppName)
-    }
-    $logFile = $AppWorkingPath + "\" + $AppName + "_install.log"
     $date = get-date -format [yyyy-MM-dd_mm:ss]-
     $date = $date.ToString()
        
@@ -49,7 +39,16 @@ Begin {
             Write-Output "Start installing WinGet application $appName with version $appVersion" | Out-File $logFile -Append
         }
         ManifestFile {
-            $templateFilePath = $AppWorkingPath + "\" +$appName + ".yaml"
+            try {
+                $ManifestFile.EndsWith('.yaml')
+            }
+            catch {
+                Write-Error "File is not a .yaml file"
+                break
+            }
+            $appFile = $ManifestFile.Substring($ManifestFile.LastIndexOf('/')+1) 
+            $appName = $appFile.Replace('.yaml',$null)
+            $templateFilePath = $AppWorkingPath + "\" + $appFile
             Invoke-WebRequest `
                 -Uri $manifestFile `
                 -OutFile $templateFilePath `
@@ -61,9 +60,18 @@ Begin {
                 Write-Output "Start installing WinGet application from file $ManifestFile" | Out-File $logFile -Append
         }
     }
+    if (-not(Test-Path $logFilePath)) {
+        New-Item -ItemType Directory -Path $logFilePath
+    }
+    if (-not(Test-Path $($logFilePath + "\" + $AppName))) {
+        $AppWorkingPath = (New-Item -ItemType Directory -Path $($logFilePath + "\" + $AppName)).FullName
+    }
+    else {
+        $AppWorkingPath = $($logFilePath + "\" + $AppName)
+    }
+    $logFile = $AppWorkingPath + "\" + $AppName + "_install.log"
 }
 Process {
-
     $switchArguments = "--silent --accept-package-agreements --accept-source-agreements"
     $arguments = ($installParameters.GetEnumerator() | Sort-Object Name | ForEach-Object { "$($_.Name) $($_.Value)" }) -join " "
     $argString = $arguments.ToString()
@@ -78,4 +86,3 @@ Process {
     Start-Process -Wait -FilePath $winget -ArgumentList "$task $argString $switchArguments --log $logFile"
     Write-Output "Install completed" | Out-File $logFile -Append
 }
-
