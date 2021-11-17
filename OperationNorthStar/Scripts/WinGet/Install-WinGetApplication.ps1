@@ -49,16 +49,16 @@ Begin {
             Write-Output "Start installing WinGet application $appName with version $appVersion" | Out-File $logFile -Append
         }
         ManifestFile {
-            $installParameters = @{
-                "--manifest" = $ManifestFile
-            }
             $templateFilePath = $AppWorkingPath + "\" +$appName + ".yaml"
             Invoke-WebRequest `
                 -Uri $manifestFile `
                 -OutFile $templateFilePath `
                 -UseBasicParsing `
                 -Headers @{"Cache-Control" = "no-cache" }
-            Write-Output "Start installing WinGet application from file $ManifestFile" | Out-File $logFile -Append
+                $installParameters = @{
+                    "--manifest" = $templateFilePath
+                }
+                Write-Output "Start installing WinGet application from file $ManifestFile" | Out-File $logFile -Append
         }
     }
 }
