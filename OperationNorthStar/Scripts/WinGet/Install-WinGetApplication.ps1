@@ -1,8 +1,7 @@
 [CmdletBinding(DefaultParameterSetName = 'Manifest')]
 param
 (
-    [parameter(Mandatory, ParameterSetName = 'Single', Position = 0)]
-    [parameter(Mandatory, ParameterSetName = 'Manifest', Position = 0)]
+    [parameter(Mandatory, Position = 0)]
     [validateSet("Install", "Uninstall")]
     [string]$task,
 
@@ -36,9 +35,8 @@ Begin {
             if ($Source) {
                 $installParameters.Add("--source", $Source)
             }
-            Write-Output "Start installing WinGet application $appName with version $appVersion" | Out-File $logFile -Append
         }
-        ManifestFile {
+        Manifest {
             try {
                 $ManifestFile.EndsWith('.yaml')
             }
@@ -57,7 +55,6 @@ Begin {
                 $installParameters = @{
                     "--manifest" = $templateFilePath
                 }
-                Write-Output "Start installing WinGet application from file $ManifestFile" | Out-File $logFile -Append
         }
     }
     if (-not(Test-Path $logFilePath)) {
@@ -72,6 +69,7 @@ Begin {
     $logFile = $AppWorkingPath + "\" + $AppName + "_install.log"
 }
 Process {
+    Write-Output "Start installing WinGet application $appName" | Out-File $logFile -Append
     $switchArguments = "--silent --accept-package-agreements --accept-source-agreements"
     $arguments = ($installParameters.GetEnumerator() | Sort-Object Name | ForEach-Object { "$($_.Name) $($_.Value)" }) -join " "
     $argString = $arguments.ToString()
