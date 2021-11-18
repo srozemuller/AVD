@@ -25,7 +25,9 @@ param
 Begin {
     $date = get-date -format [yyyy-MM-dd_mm:ss]-
     $date = $date.ToString()
-       
+    if (-not(Test-Path $logFilePath)) {
+        New-Item -ItemType Directory -Path $logFilePath
+    }   
     switch ($PsCmdlet.ParameterSetName) {
         Single {
             $installParameters = @{
@@ -44,21 +46,9 @@ Begin {
                 Write-Error "File is not a .yaml file"
                 break
             }
-            $appFile = $ManifestFile.Substring($ManifestFile.LastIndexOf('/')+1) 
-            $appName = $appFile.Replace('.yaml',$null)
-            $templateFilePath = $AppWorkingPath + "\" + $appFile
-            Invoke-WebRequest `
-                -Uri $manifestFile `
-                -OutFile $templateFilePath `
-                -UseBasicParsing `
-                -Headers @{"Cache-Control" = "no-cache" }
-                $installParameters = @{
-                    "--manifest" = $templateFilePath
-                }
+            $appFile = $ManifestFile.Substring($ManifestFile.LastIndexOf('/') + 1) 
+            $appName = $appFile.Replace('.yaml', $null)
         }
-    }
-    if (-not(Test-Path $logFilePath)) {
-        New-Item -ItemType Directory -Path $logFilePath
     }
     if (-not(Test-Path $($logFilePath + "\" + $AppName))) {
         $AppWorkingPath = (New-Item -ItemType Directory -Path $($logFilePath + "\" + $AppName)).FullName
@@ -69,6 +59,19 @@ Begin {
     $logFile = $AppWorkingPath + "\" + $AppName + "_install.log"
 }
 Process {
+    if ($PsCmdlet.ParameterSetName -eq "Manifest") {
+        $templateFilePath = $AppWorkingPath + "\" + $appFile
+        $requestParams = @{
+            Uri = $manifestFile 
+            OutFile = $templateFilePath 
+            UseBasicParsing = $true
+            Headers = @{"Cache-Control" = "no-cache" }
+        }
+        Invoke-WebRequest @requestParams
+        $installParameters = @{
+            "--manifest" = $templateFilePath
+        }
+    }
     Write-Output "Start installing WinGet application $appName" | Out-File $logFile -Append
     $switchArguments = "--silent --accept-package-agreements --accept-source-agreements"
     $arguments = ($installParameters.GetEnumerator() | Sort-Object Name | ForEach-Object { "$($_.Name) $($_.Value)" }) -join " "
