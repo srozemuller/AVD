@@ -14,7 +14,7 @@ param
     [parameter(ParameterSetName = 'Single', Position = 3)]
     [string]$Source,
 
-    [parameter(ParameterSetName = 'Single', Position = 4)]
+    [parameter()]
     [string]$logFilePath = "C:\AppDeployment",
 
     [parameter(ParameterSetName = 'Manifest', Position = 1)]
@@ -40,7 +40,8 @@ Begin {
         }
         Manifest {
             try {
-                $ManifestFile.EndsWith('.yaml')
+                $ManifestFile.EndsWith('.yaml') | Out-Null
+                Write-Information "File is yaml file"
             }
             catch {
                 Write-Error "File is not a .yaml file"
@@ -78,7 +79,7 @@ Process {
     $argString = $arguments.ToString()
     Write-Output "Started $($date): Winget $($task) $argString $switchArguments" | Out-File $logFile -Append
 
-    Write-Warning "Winget $task $argString $switchArguments"
+    Write-Information "executing with: $task $argString $switchArguments" -InformationAction Continue
     Write-Output  "$env:ProgramFiles" | Out-File $logFile -Append
     $Winget = Get-ChildItem -Path (Join-Path -Path (Join-Path -Path $env:ProgramFiles -ChildPath "WindowsApps") -ChildPath "Microsoft.DesktopAppInstaller*_x64*\AppInstallerCLI.exe")
 
