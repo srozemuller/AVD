@@ -40,11 +40,18 @@ Begin {
         }
         Manifest {
             try {
-                $repoPath = ($ManifestFileLocation.Split($ManifestFileLocation.split("/")[5])[-1]) 
+                if ($ManifestFileLocation.Contains('raw.githubusercontent.com')) {
+                    Write-Verbose "Raw GitHub content provided"
+                    $repoPath = ($ManifestFileLocation.Split($ManifestFileLocation.split("/")[6])[-1]) 
+                }
+                else {
+                    Write-Verbose "Raw GitHub content provided"
+                    $repoPath = ($ManifestFileLocation.Split($ManifestFileLocation.split("/")[5])[-1]) 
+                }
                 $arguments = 'https://api.github.com/repos/{3}/{4}/contents' -f ($ManifestFileLocation -split "/") + [string]$repoPath
                 $request = Invoke-WebRequest -Uri $($arguments)
                 $content = $request.Content | ConvertFrom-Json
-                $files = $content | Where-Object { $_.type -eq "file" } | Select-Object -exp download_url
+                $files = $content | Where-Object { $_.type -eq "file" } | Select-Object download_url, name
                 Write-Information "Downloading files"
             }
             catch {
@@ -55,24 +62,27 @@ Begin {
             $appName = $appFile.Replace('.yaml', $null)
         }
     }
-    if (-not(Test-Path $($logFilePath + "\" + $AppName))) {
-        $AppWorkingPath = (New-Item -ItemType Directory -Path $($logFilePath + "\" + $AppName)).FullName
+    if (-not(Test-Path (Join-Path -Path $logFilePath -ChildPath $AppName))) {
+        $AppWorkingPath = (New-Item -ItemType Directory -Path (Join-Path -Path $logFilePath -ChildPath $AppName)).FullName
     }
     else {
-        $AppWorkingPath = $($logFilePath + "\" + $AppName)
+        $AppWorkingPath = Join-Path -Path $logFilePath -ChildPath $AppName
     }
-    $logFile = $AppWorkingPath + "\" + $AppName + "_install.log"
+    $logFile = Join-Path -Path $AppWorkingPath -ChildPath 'install.log'
 }
 Process {
     if ($PsCmdlet.ParameterSetName -eq "Manifest") {
-        $templateFilePath = $AppWorkingPath + "\" + $appFile
-        $requestParams = @{
-            Uri             = $manifestFile 
-            OutFile         = $templateFilePath 
-            UseBasicParsing = $true
-            Headers         = @{"Cache-Control" = "no-cache" }
+        $templateFilePath = (New-Item -ItemType Directory -Path (Join-Path -Path $AppWorkingPath -ChildPath 'YAML')).FullName
+        $files | ForEach-Object {
+            $requestParams = @{
+                Uri             = $_.Download_url
+                OutFile         = Join-Path -Path $templateFilePath -ChildPath $_.Name
+                UseBasicParsing = $true
+                Headers         = @{"Cache-Control" = "no-cache" }
+            }
+            Invoke-WebRequest @requestParams
+            Write-Output "Downloaded file $($_.Name)" | Out-File $logFile -Append
         }
-        Invoke-WebRequest @requestParams
         $installParameters = @{
             "--manifest" = $templateFilePath
         }
