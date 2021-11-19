@@ -27,7 +27,7 @@ else {
 
 #Importing Modules
 Import-Module powershell-yaml
-$yamlFileLocation = 'https://raw.githubusercontent.com/srozemuller/AVD/main/OperationNorthStar/Scripts/WinGet/manifests/a/Adobe/Reader/64-bit/21.007.20099'
+$yamlFileLocation = "https://raw.githubusercontent.com/srozemuller/AVD/main/OperationNorthStar/Scripts/WinGet/manifests/g/Google/Chrome/96.0.4664.45/Google.Chrome.installer.yaml"
 $yamlFileLocation | ForEach-Object {
     Try {
         [string[]]$fileContent = (Invoke-WebRequest -Uri $_ -Headers @{"Cache-Control" = "no-cache" }).content
@@ -41,7 +41,7 @@ $yamlFileLocation | ForEach-Object {
         }
     }
     Catch {
-        Write-Error "He! This is not a yaml file"
+        Write-Error "He! This location does not exist."
     }
 
     $detectionRuleParameters = @{
