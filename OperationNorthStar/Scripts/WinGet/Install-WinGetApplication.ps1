@@ -18,7 +18,7 @@ param
     [string]$logFilePath = "C:\AppDeployment",
 
     [parameter(ParameterSetName = 'Manifest', Position = 1)]
-    [string]$ManifestFile
+    [string]$ManifestFileLocation
 
 )
 
@@ -40,14 +40,18 @@ Begin {
         }
         Manifest {
             try {
-                $ManifestFile.EndsWith('.yaml') | Out-Null
-                Write-Information "File is yaml file"
+                $repoPath = ($ManifestFileLocation.Split($ManifestFileLocation.split("/")[5])[-1]) 
+                $arguments = 'https://api.github.com/repos/{3}/{4}/contents' -f ($ManifestFileLocation -split "/") + [string]$repoPath
+                $request = Invoke-WebRequest -Uri $($arguments)
+                $content = $request.Content | ConvertFrom-Json
+                $files = $content | Where-Object { $_.type -eq "file" } | Select-Object -exp download_url
+                Write-Information "Downloading files"
             }
             catch {
-                Write-Error "File is not a .yaml file"
+                Write-Error "Location not found!"
                 break
             }
-            $appFile = $ManifestFile.Substring($ManifestFile.LastIndexOf('/') + 1) 
+            $appFile = $files[-1].Substring($files[-1].LastIndexOf('/') + 1) 
             $appName = $appFile.Replace('.yaml', $null)
         }
     }
@@ -63,10 +67,10 @@ Process {
     if ($PsCmdlet.ParameterSetName -eq "Manifest") {
         $templateFilePath = $AppWorkingPath + "\" + $appFile
         $requestParams = @{
-            Uri = $manifestFile 
-            OutFile = $templateFilePath 
+            Uri             = $manifestFile 
+            OutFile         = $templateFilePath 
             UseBasicParsing = $true
-            Headers = @{"Cache-Control" = "no-cache" }
+            Headers         = @{"Cache-Control" = "no-cache" }
         }
         Invoke-WebRequest @requestParams
         $installParameters = @{
