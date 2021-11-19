@@ -101,8 +101,4 @@ Process {
     Start-Process -Wait -FilePath $winget -ArgumentList "settings --enable LocalManifestFiles"
     Start-Process -Wait -FilePath $winget -ArgumentList "$task $argString $switchArguments --log $logFile"
     Write-Output "Install completed" | Out-File $logFile -Append
-<<<<<<< HEAD
-} 
-=======
-} 
->>>>>>> 901dd6bff6aa099a6a283ebeca31b21dbcf1361d
+}
