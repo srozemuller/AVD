@@ -42,14 +42,14 @@ Begin {
             try {
                 if ($ManifestFileLocation.Contains('raw.githubusercontent.com')) {
                     Write-Verbose "Raw GitHub content provided"
-                    $repoPath = ($ManifestFileLocation.Split($ManifestFileLocation.split("/")[6])[-1]) 
+                    $repoPath = ($ManifestFileLocation -split $($ManifestFileLocation -split "/")[5])[-1] 
                 }
                 else {
-                    Write-Verbose "Raw GitHub content provided"
-                    $repoPath = ($ManifestFileLocation.Split($ManifestFileLocation.split("/")[5])[-1]) 
+                    Write-Verbose "Human readable GitHub content provided"
+                    $repoPath = ($ManifestFileLocation -split $($ManifestFileLocation -split "/")[6])[-1]
                 }
                 $arguments = 'https://api.github.com/repos/{3}/{4}/contents' -f ($ManifestFileLocation -split "/") + [string]$repoPath
-                $request = Invoke-WebRequest -Uri $($arguments)
+                $request = Invoke-WebRequest -Uri $($arguments) -UseBasicParsing:$true
                 $content = $request.Content | ConvertFrom-Json
                 $files = $content | Where-Object { $_.type -eq "file" } | Select-Object download_url, name
                 Write-Information "Downloading files"
@@ -58,7 +58,7 @@ Begin {
                 Write-Error "Location not found!"
                 break
             }
-            $appFile = $files[-1].Substring($files[-1].LastIndexOf('/') + 1) 
+            $appFile = $files[-1].download_url.Substring($files[-1].download_url.LastIndexOf('/') + 1) 
             $appName = $appFile.Replace('.yaml', $null)
         }
     }
@@ -101,4 +101,4 @@ Process {
     Start-Process -Wait -FilePath $winget -ArgumentList "settings --enable LocalManifestFiles"
     Start-Process -Wait -FilePath $winget -ArgumentList "$task $argString $switchArguments --log $logFile"
     Write-Output "Install completed" | Out-File $logFile -Append
-}
+} 
