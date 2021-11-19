@@ -55,11 +55,12 @@ $yamlFile | ForEach-Object {
     # Create detection rule
     $DetectionRule = New-IntuneWin32AppDetectionRuleFile @detectionRuleParameters
     $manifestLocation = $_.Substring(0,$_.LastIndexOf('/'))
+    
     $appDeployParameters = @{
-        filePath             = $IntuneWinFile.FullName
+        filePath             = $IntuneWinFile
         publisher            = $yamlContent.PackageIdentifier.Substring(0, $yamlContent.PackageIdentifier.IndexOf('.'))
         displayName          = $($yamlContent.PackageIdentifier.Substring($yamlContent.PackageIdentifier.IndexOf('.') + 1)).Replace('.', ' ')
-        description          = $yamlContent.PackageDescription
+        description          = if(-not($yamlContent.PackageDescription)){"No description"}
         appversion           = $yamlContent.PackageVersion
         InstallExperience    = "system"
         RestartBehavior      = "suppress" 
