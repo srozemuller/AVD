@@ -2,14 +2,14 @@
 param (
     [Parameter()]
     [object]
-    $yamlFile
+    $yamlFile,
+
+    [Parameter()]
+    [string]
+    $IntuneWinFile
 )
 
 
-###############################################################################################################
-######                                         Install Modules                                           ######
-###############################################################################################################
-Write-Host "Installing Intune modules if required (current user scope)"
 
 #Install MS Graph if not available
 if (Get-Module -ListAvailable -Name powershell-yaml) {
@@ -25,51 +25,55 @@ else {
     }
 }
 
-
 #Importing Modules
 Import-Module powershell-yaml
+$yamlFileLocation = 'https://raw.githubusercontent.com/srozemuller/AVD/main/OperationNorthStar/Scripts/WinGet/manifests/a/Adobe/Reader/64-bit/21.007.20099'
+$yamlFileLocation | ForEach-Object {
+    Try {
+        [string[]]$fileContent = (Invoke-WebRequest -Uri $_ -Headers @{"Cache-Control" = "no-cache" }).content
+        $content = $null
+        foreach ($line in $fileContent) { $content = $content + "`n" + $line }
+        Try {
+            $yamlContent = ConvertFrom-Yaml $content
+        }
+        Catch {
+            Write-Error "Converting YAML not succesfull, $_"
+        }
+    }
+    Catch {
+        Write-Error "He! This is not a yaml file"
+    }
 
-$yamlFile | ForEach-Object {
-    ###############################################################################################################
-    ######                                          Download YAML                                            ######
-    ###############################################################################################################
-
-    [string[]]$fileContent = (Invoke-WebRequest -Uri $_ -Headers @{"Cache-Control" = "no-cache" }).content
-    foreach ($line in $fileContent) { $content = $content + "`n" + $line }
-    $obj = ConvertFrom-Yaml $content
-    $detectionRulePath = $obj.InstallPath.Substring(0, $obj.InstallPath.LastIndexOf("\"))
-    $detectionruleFolder = $obj.InstallPath.Substring($obj.InstallPath.LastIndexOf("\") + 1)
-
-    $publisher = $obj.publisher
-    $name = $obj.packagename
-    $description = $obj.shortdescription
-    $appversion = $obj.PackageVersion
-    $infourl = $obj.PackageUrl
-
-
-    $IntuneWinFile = Get-ChildItem -Path  $path | Where-Object Name -Like "*.intunewin"
-    $IntuneWinFile.Name
-
-
+    $detectionRuleParameters = @{
+        Path                 = $yamlContent.InstallPath.Substring(0, $yamlContent.InstallPath.LastIndexOf("\"))
+        FileOrFolder         = $yamlContent.InstallPath.Substring($yamlContent.InstallPath.LastIndexOf("\") + 1)
+        existence            = $true
+        check32BitOn64System = $false
+        DetectionType        = "exists"
+    }
     # Create detection rule
-    $DetectionRule = New-IntuneWin32AppDetectionRuleFile -Existence -Path "$detectionRulePath" -FileOrFolder $detectionruleFolder -Check32BitOn64System $false -DetectionType "exists"
+    $DetectionRule = New-IntuneWin32AppDetectionRuleFile @detectionRuleParameters
 
-    $InstallCommandLine = "powershell.exe -ExecutionPolicy Bypass -File .\$($InstallationScriptFile.Name)"
-    $UninstallCommandLine = $uninstallcommand
-    $ImageFile = $icondownload
-    $Icon = New-IntuneWin32AppIcon -FilePath $ImageFile
-    Add-IntuneWin32App -FilePath $IntuneWinFile.FullName -DisplayName $name -Description $description -Publisher $publisher -AppVersion $appversion -InformationURL $infourl -Icon $Icon -InstallExperience "system" -RestartBehavior "suppress" -DetectionRule $DetectionRule -InstallCommandLine $InstallCommandLine -UninstallCommandLine $UninstallCommandLine -Verbose
-
-
-    ##Assignments
-    $Win32App = Get-IntuneWin32App -DisplayName $DisplayName -Verbose
-
-    #Install
-    $installid = $installgroup.Id
-    Add-IntuneWin32AppAssignmentGroup -Include -ID $Win32App.id -GroupID $installid -Intent "available" -Notification "showAll" -Verbose
-
-
-    #Uninstall
-    $uninstallid = $uninstallgroup.Id
-    Add-IntuneWin32AppAssignmentGroup -Include -ID $Win32App.id -GroupID $uninstallid -Intent "uninstall" -Notification "showAll" -Verbose
+    $appDeployParameters = @{
+        filePath             = $IntuneWinFile.FullName
+        publisher            = $yamlContent.PackageIdentifier.Substring(0, $yamlContent.PackageIdentifier.IndexOf('.'))
+        displayName          = $($yamlContent.PackageIdentifier.Substring($yamlContent.PackageIdentifier.IndexOf('.') + 1)).Replace('.', ' ')
+        description          = $yamlContent.PackageDescription
+        appversion           = $yamlContent.PackageVersion
+        InstallExperience    = "system"
+        RestartBehavior      = "suppress" 
+        DetectionRule        = $DetectionRule
+        InstallCommandLine   = "Install-WinGetApplication.exe install -manifestfile $_"
+        UninstallCommandLine = "Install-WinGetApplication.exe uninstall -appname $yamlContent.PackageIdentifier -appversion $yamlContent.PackageVersion"
+    }
+    $appDeployment = Add-IntuneWin32App @appDeployParameters -Verbose
+    $appDeployment
+    Write-Verbose "Group name $groupName provided, looking for group in Azure AD"
+    if ($null -eq $groupName) {
+        $groupName = "All Users"
+    }
+    $graphUrl = "https://graph.microsoft.com"
+    $requestUrl = $graphUrl + "/beta/groups?`$filter=displayName eq '$groupName'"
+    $identityInfo = (Invoke-RestMethod -Method GET -Uri $requestUrl -Headers $token).value.id
+    Add-IntuneWin32AppAssignmentGroup -Include -ID $appDeployment.id -GroupID $identityInfo -Intent "available" -Notification "showAll" -Verbose
 }

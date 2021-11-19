@@ -1,19 +1,15 @@
-# Created with YamlCreate.ps1 v2.0.0 $debug=AUSU.5-1-19041-1320
+# Created with YamlCreate.ps1 v2.0.0 using YAML parsing
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.0.0.schema.json
 
 PackageIdentifier: Google.Chrome
-PackageVersion: 96.0.4664.45
-PackageDescription: A free Internet browser officially released by Google on December 11 2008
+PackageVersion: 92.0.4515.107
 Platform:
 - Windows.Desktop
 MinimumOSVersion: 10.0.0.0
-InstallerType: msi
-Scope: machine
 InstallModes:
 - interactive
 - silent
 - silentWithProgress
-UpgradeBehavior: install
 Commands:
 - chrome
 Protocols:
@@ -24,9 +20,21 @@ FileExtensions:
 - htm
 - url
 Installers:
-- Architecture: x64
-  InstallerUrl: https://dl.google.com/dl/chrome/install/googlechromestandaloneenterprise64.msi
-  InstallerSha256: 0A170040F944A81C9AF8CDE8D46AC22E35A19A4047AF02C49BEEF09EAA4959F1
-  ProductCode: '{27AE757E-4286-3D70-ACB1-4FEAC2F15FB9}'
+- InstallerLocale: en-US
+  Architecture: x64
+  InstallerType: msi
+  Scope: machine
+  InstallerUrl: https://dl.google.com/edgedl/chrome/install/GoogleChromeStandaloneEnterprise64.msi
+  InstallerSha256: 5C3A0C9FD305CC34F96905A0D12861CC05F13AFE8EF0ED6E12427E3EACEB4B81
+  UpgradeBehavior: install
+  ProductCode: '{77B482C4-B8C6-3E7C-A524-3EA1D10CCCD9}'
+- InstallerLocale: en-US
+  Architecture: x86
+  InstallerType: msi
+  Scope: machine
+  InstallerUrl: https://dl.google.com/edgedl/chrome/install/GoogleChromeStandaloneEnterprise.msi
+  InstallerSha256: 484E5C7F43A0A62CA37A402569FC2336546C71532C696103B11E8CFA978C46F8
+  UpgradeBehavior: install
+  ProductCode: '{D1A081BA-14A5-3931-89A9-D19408DD86A5}'
 ManifestType: installer
 ManifestVersion: 1.0.0
