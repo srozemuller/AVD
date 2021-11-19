@@ -10,7 +10,7 @@ InstallModes:
 - interactive
 - silent
 - silentWithProgress
-InstallPath: C:\Program Files (x86)\Google\Chrome
+InstallPath: 'C:\Program Files (x86)\Google\Chrome'
 Commands:
 - chrome
 Protocols:
