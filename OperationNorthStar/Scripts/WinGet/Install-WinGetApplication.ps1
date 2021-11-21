@@ -18,10 +18,7 @@ param
     [string]$logFilePath = "C:\AppDeployment",
 
     [parameter(ParameterSetName = 'Manifest', Position = 1)]
-    [string]$ManifestFileLocation,
-
-    [parameter(ParameterSetName = 'LocalManifest', Position = 1)]
-    [string]$LocalManifestFileLocation
+    [string]$ManifestFileLocation
 
 )
 
@@ -43,19 +40,31 @@ Begin {
         }
         Manifest {
             try {
-                if ($ManifestFileLocation.Contains('raw.githubusercontent.com')) {
-                    Write-Verbose "Raw GitHub content provided"
-                    $repoPath = ($ManifestFileLocation -split $($ManifestFileLocation -split "/")[5])[-1] 
+                if ($ManifestFileLocation.Contains('github')) {
+                    $location = "GitHub"
+                    if ($ManifestFileLocation.Contains('raw.githubusercontent.com')) {
+                        Write-Verbose "Raw GitHub content provided"
+                        $repoPath = ($ManifestFileLocation -split $($ManifestFileLocation -split "/")[5])[-1] 
+                    }
+                    else {
+                        Write-Verbose "Human readable GitHub content provided"
+                        $repoPath = ($ManifestFileLocation -split $($ManifestFileLocation -split "/")[6])[-1]
+                    }
+                    $arguments = 'https://api.github.com/repos/{3}/{4}/contents' -f ($ManifestFileLocation -split "/") + [string]$repoPath
+                    $request = Invoke-WebRequest -Uri $($arguments) -UseBasicParsing:$true
+                    $content = $request.Content | ConvertFrom-Json
+                    $files = $content | Where-Object { $_.type -eq "file" } | Select-Object download_url, name
+                    Write-Information "Downloading files"
+                }
+                elseif ($ManifestFileLocation.Contains('\')){
+                    $location = "Local"
+                    $installParameters = @{
+                        "--manifest" = $ManifestFileLocation
+                    }
                 }
                 else {
-                    Write-Verbose "Human readable GitHub content provided"
-                    $repoPath = ($ManifestFileLocation -split $($ManifestFileLocation -split "/")[6])[-1]
+                    Throw "No valid location. Provide local path or public github repo"
                 }
-                $arguments = 'https://api.github.com/repos/{3}/{4}/contents' -f ($ManifestFileLocation -split "/") + [string]$repoPath
-                $request = Invoke-WebRequest -Uri $($arguments) -UseBasicParsing:$true
-                $content = $request.Content | ConvertFrom-Json
-                $files = $content | Where-Object { $_.type -eq "file" } | Select-Object download_url, name
-                Write-Information "Downloading files"
             }
             catch {
                 Write-Error "Location not found!"
@@ -63,11 +72,6 @@ Begin {
             }
             $appFile = $files[-1].download_url.Substring($files[-1].download_url.LastIndexOf('/') + 1) 
             $appName = $appFile.Replace('.yaml', $null)
-        }
-        LocalManifest {
-            $installParameters = @{
-                "--manifest" = $LocalManifestFileLocation
-            }
         }
     }
     if (-not(Test-Path (Join-Path -Path $logFilePath -ChildPath $AppName))) {
@@ -79,8 +83,8 @@ Begin {
     $logFile = Join-Path -Path $AppWorkingPath -ChildPath 'install.log'
 }
 Process {
-    switch ($PsCmdlet.ParameterSetName) {
-        Manifest {
+    switch ($location) {
+        GitHub {
             $templateFilePath = (New-Item -ItemType Directory -Path (Join-Path -Path $AppWorkingPath -ChildPath 'YAML')).FullName
             $files | ForEach-Object {
                 $requestParams = @{
@@ -96,7 +100,7 @@ Process {
                 "--manifest" = $templateFilePath
             }
         }
-        default {
+        Default {
 
         }
     }
