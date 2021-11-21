@@ -18,7 +18,10 @@ param
     [string]$logFilePath = "C:\AppDeployment",
 
     [parameter(ParameterSetName = 'Manifest', Position = 1)]
-    [string]$ManifestFileLocation
+    [string]$ManifestFileLocation,
+
+    [parameter(ParameterSetName = 'LocalManifest', Position = 1)]
+    [string]$LocalManifestFileLocation
 
 )
 
@@ -61,6 +64,11 @@ Begin {
             $appFile = $files[-1].download_url.Substring($files[-1].download_url.LastIndexOf('/') + 1) 
             $appName = $appFile.Replace('.yaml', $null)
         }
+        LocalManifest {
+            $installParameters = @{
+                "--manifest" = $LocalManifestFileLocation
+            }
+        }
     }
     if (-not(Test-Path (Join-Path -Path $logFilePath -ChildPath $AppName))) {
         $AppWorkingPath = (New-Item -ItemType Directory -Path (Join-Path -Path $logFilePath -ChildPath $AppName)).FullName
@@ -71,20 +79,25 @@ Begin {
     $logFile = Join-Path -Path $AppWorkingPath -ChildPath 'install.log'
 }
 Process {
-    if ($PsCmdlet.ParameterSetName -eq "Manifest") {
-        $templateFilePath = (New-Item -ItemType Directory -Path (Join-Path -Path $AppWorkingPath -ChildPath 'YAML')).FullName
-        $files | ForEach-Object {
-            $requestParams = @{
-                Uri             = $_.Download_url
-                OutFile         = Join-Path -Path $templateFilePath -ChildPath $_.Name
-                UseBasicParsing = $true
-                Headers         = @{"Cache-Control" = "no-cache" }
+    switch ($PsCmdlet.ParameterSetName) {
+        Manifest {
+            $templateFilePath = (New-Item -ItemType Directory -Path (Join-Path -Path $AppWorkingPath -ChildPath 'YAML')).FullName
+            $files | ForEach-Object {
+                $requestParams = @{
+                    Uri             = $_.Download_url
+                    OutFile         = Join-Path -Path $templateFilePath -ChildPath $_.Name
+                    UseBasicParsing = $true
+                    Headers         = @{"Cache-Control" = "no-cache" }
+                }
+                Invoke-WebRequest @requestParams
+                Write-Output "Downloaded file $($_.Name)" | Out-File $logFile -Append
             }
-            Invoke-WebRequest @requestParams
-            Write-Output "Downloaded file $($_.Name)" | Out-File $logFile -Append
+            $installParameters = @{
+                "--manifest" = $templateFilePath
+            }
         }
-        $installParameters = @{
-            "--manifest" = $templateFilePath
+        default {
+
         }
     }
     Write-Output "Start installing WinGet application $appName" | Out-File $logFile -Append
