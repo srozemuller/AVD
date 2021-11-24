@@ -6,7 +6,11 @@ param (
 
     [Parameter()]
     [string]
-    $IntuneWinFile
+    $IntuneWinFile,
+
+    [Parameter()]
+    [string]
+    $assignToGroupName
 )
 
 
