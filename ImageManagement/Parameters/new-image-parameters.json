@@ -1,0 +1,18 @@
+{
+    "parameters": {
+        "forceDeployment": true,
+        "location": "westeurope",
+        "baseMachineSettings": {
+            "osDiskType": "Premium_LRS",
+            "DiskSizeGb": "128",
+            "virtualMachineSize": "Standard_D2s_v3",
+            "VmCores": 2,
+            "VmRam": 8
+        },
+        "gallerySettings": {
+            "GalleryName": "UCS_ImageStore",
+            "Description": "Gallery Unica Cloud Solution images",
+            "GalleryResourceGroup": "RG-PRD-IMG-WEU"
+        }
+    }
+}
