@@ -1,0 +1,42 @@
+parameters:
+  serviceConnection: ''
+  subscriptionId: ''
+  taskName: ''
+  parameterFile: ''
+  ImageSku: ''
+  ImageOffer: ''
+
+
+jobs:
+- job: DeploySIG
+  steps:
+  - task: DownloadPipelineArtifact@2
+    inputs:
+      buildType: 'current'
+      targetPath: '$(Pipeline.Workspace)'
+  - script: dir $(Pipeline.Workspace)/drop
+  - task: AzurePowerShell@5
+    name: deploySigRg
+    displayName: Creating SIG ResourceGroup
+    inputs:
+      azureSubscription: ${{ parameters.serviceConnection }}
+      ScriptType: 'InlineScript'
+      Inline: |
+          Set-AzContext -Subscription ${{ parameters.subscriptionId }}
+          $fileParameters = (Get-Content ${{ parameters.parameterFile }} | ConvertFrom-Json).parameters
+          $deployParameters = @{
+            ResourceGroup = $fileParameters.sharedImageGallerySettings.galleryResourceGroup
+            Location = $fileParameters.location
+          }
+          New-AzResourceGroup @deployParameters -Force:$fileParameters.forceDeployment
+      azurePowerShellVersion: 'LatestVersion'
+  - task: AzurePowerShell@5
+    name: task_deployDefinition
+    displayName: New compute gallery
+    inputs:
+      azureSubscription: ${{ parameters.ServiceConnection }}
+      ScriptType: 'FilePath'
+      ScriptPath: '$(Pipeline.Workspace)/drop/deploy-computegallery.ps1'
+      ScriptArguments: '-subscriptionId ${{ parameters.subscriptionId }} -parameterFile "${{ parameters.parameterFile }}"'
+      errorActionPreference: 'stop'
+      azurePowerShellVersion: 'LatestVersion'

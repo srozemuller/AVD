@@ -1,0 +1,50 @@
+parameters:
+  serviceConnection: ''
+  subscriptionId: '' 
+  jobname: ''
+  virtualMachineName: ''
+  diskSizeGB: ''
+  Identifier: ''
+
+jobs:
+- job : ${{ parameters.JobName }}
+  steps:      
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        buildType: 'current'
+        targetPath: '$(Pipeline.Workspace)'
+    - task: PowerShell@2
+      enabled: false
+      displayName: installing Az.Avd module
+      inputs:
+        targetType: 'inline'
+        script: |
+          Install-Module -Name Az.Avd -AllowPrerelease -Force -Verbose -Scope CurrentUser
+          Import-Module -Name Az.Avd
+        pwsh: true
+    - task: AzurePowerShell@5
+      name: deployTmpRg
+      displayName: Creating Temp ResourceGroup
+      inputs:
+        azureSubscription: ${{ parameters.serviceConnection }}
+        ScriptType: 'InlineScript'
+        Inline: |
+            Set-AzContext -Subscription ${{ parameters.subscriptionId }}
+            $deployParameters = @{
+              ResourceGroup = "rg-${{ parameters.Identifier }}"
+              Location = 'westeurope'
+            }
+            $tempResourceGroup = New-AzResourceGroup @deployParameters -Force:$true
+            Write-Host "##vso[task.setvariable variable=tempResourceGroupId;isOutput=true;issecret=false]$($tempResourceGroup.ResourceId)"
+        azurePowerShellVersion: 'LatestVersion'
+    - script: dir $(Build.SourcesDirectory)
+    - task: AzurePowerShell@5
+      name: task_${{ parameters.JobName }}
+      displayName: Deploy new vm
+      inputs:
+        azureSubscription: ${{ parameters.ServiceConnection }}
+        ScriptType: 'FilePath'
+        ScriptPath: '$(Pipeline.Workspace)/drop/vmdeploy-from-gallery.ps1'
+        ScriptArguments: '-Identifier ${{ parameters.Identifier }} -subscriptionId ${{ parameters.subscriptionId }} -resourceGroupName "rg-${{ parameters.Identifier }}" -DiskSizeGB ${{ parameters.DiskSizeGB }} -VirtualMachineName ${{ parameters.VirtualMachineName }}'
+        errorActionPreference: 'stop'
+        azurePowerShellVersion: 'LatestVersion'

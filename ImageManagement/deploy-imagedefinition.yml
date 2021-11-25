@@ -1,0 +1,28 @@
+parameters:
+  serviceConnection: ''
+  subscriptionId: ''
+  taskName: ''
+  parameterFile: ''
+  ImageSku: ''
+  ImageOffer: ''
+  dependsOn: []
+
+jobs:
+- job: DeployImageDefinition
+  dependsOn: ${{ parameters.dependsOn }}
+  steps:
+  - task: DownloadPipelineArtifact@2
+    inputs:
+      buildType: 'current'
+      targetPath: '$(Pipeline.Workspace)'
+  - script: dir $(Pipeline.Workspace)/drop
+  - task: AzurePowerShell@5
+    name: ${{ parameters.taskName }}
+    displayName: New image definition
+    inputs:
+      azureSubscription: ${{ parameters.ServiceConnection }}
+      ScriptType: 'FilePath'
+      ScriptPath: '$(Pipeline.Workspace)/drop/deploy-imagedefintion.ps1'
+      ScriptArguments: '-subscriptionId ${{ parameters.subscriptionId }} -parameterFile "${{ parameters.parameterFile }}" -ImageSku "${{ parameters.ImageSku }}" -ImageOffer "${{ parameters.ImageOffer }}" -osState "${{ parameters.osState }}" -osType "${{ parameters.osType }}" -hyperVGeneration "${{ parameters.hyperVGeneration }}"'
+      errorActionPreference: 'stop'
+      azurePowerShellVersion: 'LatestVersion'

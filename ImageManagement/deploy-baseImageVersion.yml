@@ -1,0 +1,107 @@
+parameters:
+  serviceConnection: ''
+  taskName: ''
+  subscriptionId: ''
+  parameterFile: ''
+  VirtualMachineName: ''
+  imageVersionName: ''
+  ImagePublisher: ''
+  ImageSku: ''
+  ImageOffer: ''
+  DefinitionName: ''
+  dependsOn: []
+
+jobs:
+- job: DeployImage
+  displayName: Deploy initial image
+  dependsOn: ${{ parameters.dependsOn }}
+  steps:
+  - task: DownloadPipelineArtifact@2
+    inputs:
+      buildType: 'current'
+      targetPath: '$(Pipeline.Workspace)'
+  - powershell: |
+      Write-Host "Virtual machine name is: ${{ parameters.VirtualMachineName }}"
+      Write-Host "Computername is: ${{ parameters.VirtualMachineName }}.Replace(".","")"
+  - task: AzurePowerShell@5
+    name: deployTmpRg
+    displayName: Creating Temp ResourceGroup
+    inputs:
+      azureSubscription: ${{ parameters.serviceConnection }}
+      ScriptType: 'InlineScript'
+      Inline: |
+          Set-AzContext -Subscription ${{ parameters.subscriptionId }}
+          $fileParameters = (Get-Content ${{ parameters.parameterFile }} | ConvertFrom-Json).parameters
+          $deployParameters = @{
+            ResourceGroup = "rg-${{ parameters.VirtualMachineName }}"
+            Location = $fileParameters.location
+          }
+          New-AzResourceGroup @deployParameters -Force:$fileParameters.forceDeployment
+      azurePowerShellVersion: 'LatestVersion'
+  - task: AzurePowerShell@5
+    name: ${{ parameters.taskName }}
+    enabled: true
+    inputs:
+      azureSubscription: ${{ parameters.ServiceConnection }}
+      ScriptType: 'FilePath'
+      ScriptPath: '$(Pipeline.Workspace)/drop/deploy-initial-vm.ps1'
+      ScriptArguments: '-subscriptionId ${{ parameters.subscriptionId }} -parameterFile ${{ parameters.parameterFile }} -VirtualMachineName ${{ parameters.VirtualMachineName }} -ImagePublisher ${{ parameters.ImagePublisher }} -ImageSku ${{ parameters.ImageSku }} -ImageOffer ${{ parameters.ImageOffer }}'
+      errorActionPreference: 'stop'
+      azurePowerShellVersion: 'LatestVersion'
+  - task: AzurePowerShell@5
+    name: GeneralizeMachine
+    enabled: true
+    inputs:
+      azureSubscription: ${{ parameters.serviceConnection }}
+      ScriptType: 'InlineScript'
+      Inline: |
+          Set-AzContext -Subscription ${{ parameters.subscriptionId }}
+          $vm = get-azvm -name ${{ parameters.VirtualMachineName }} -Status
+          $vm | Invoke-AzVMRunCommand -CommandId "RunPowerShellScript" -ScriptPath $(Pipeline.Workspace)/drop/drop/sysprep.ps1
+          do {
+            $vm = get-azvm -name ${{ parameters.VirtualMachineName }} -Status
+            Write-Host $vm.Status
+          }
+          while($vm.PowerState -ne 'VM stopped')
+          $vm | Set-AzVm -Generalized
+      azurePowerShellVersion: 'LatestVersion'
+  - task: AzurePowerShell@5
+    name: CreateInitialImage
+    enabled: true
+    inputs:
+      azureSubscription: ${{ parameters.serviceConnection }}
+      ScriptType: 'InlineScript'
+      Inline: |
+          Set-AzContext -Subscription ${{ parameters.subscriptionId }}
+          $fileParameters = (Get-Content ${{ parameters.parameterFile }} | ConvertFrom-Json).parameters
+          $versionName = "${{ parameters.imageVersionName }}"
+          $vm = Get-AzVM -Name "${{ parameters.VirtualMachineName }}"
+          $vm | FL
+          $imageVersionParameters = @{
+              GalleryImageDefinitionName = "${{ parameters.DefinitionName }}"
+              GalleryImageVersionName    = $versionName
+              GalleryName                = $fileParameters.gallerySettings.GalleryName
+              ResourceGroupName          = $fileParameters.gallerySettings.GalleryResourceGroup
+              Location                   = $fileParameters.location
+              SourceImageId              = $vm.id.ToString()
+          }
+          $imageVersionParameters
+          $imageVersion = New-AzGalleryImageVersion @imageVersionParameters
+          $imageVersion | FL
+          Write-Host "##vso[task.setvariable variable=imageVersion;isOutput=true;issecret=false]$($imageVersion.Id)"
+      azurePowerShellVersion: 'LatestVersion'
+      errorActionPreference: 'stop'
+  - powershell: |
+      write-Host "image Id is: $(CreateInitialImage.imageVersion)"
+  - task: AzurePowerShell@5
+    name: RemoveTempRG
+    displayName: Removing temp resourcegroup rg-${{ parameters.VirtualMachineName }}
+    enabled: true
+    inputs:
+      azureSubscription: ${{ parameters.serviceConnection }}
+      ScriptType: 'InlineScript'
+      Inline: |
+          Set-AzContext -Subscription ${{ parameters.subscriptionId }}
+          Remove-AzResourceGroup -Name "rg-${{ parameters.VirtualMachineName }}" -Force:$true
+      azurePowerShellVersion: 'LatestVersion'
+      errorActionPreference: 'stop'

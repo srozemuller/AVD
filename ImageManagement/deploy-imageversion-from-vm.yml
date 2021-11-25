@@ -1,0 +1,29 @@
+parameters:
+  JobName: ''
+  HostpoolName: ''
+  ServiceConnection: ''
+  VirtualMachineName: ''
+  Hostpoolresourcegroup: ''
+  ImageVersion: ''
+  SubscriptionId: ''
+
+jobs:
+- job: '${{ parameters.jobname }}'
+  timeoutInMinutes: 90
+  variables:
+    HostpoolName: '${{ parameters.HostpoolName }}'
+    VirtualMachineName: '${{ parameters.VirtualMachineName }}'
+  displayName: Creating new image version for hostpool ${{ parameters.HostpoolName }} 
+  steps:
+    - checkout: Scripts
+    - script: dir $(Build.SourcesDirectory)
+    - task: AzurePowerShell@5
+      name: vm_to_sigversion
+      displayName: Create SIG version from VM
+      inputs:
+        azureSubscription: ${{ parameters.ServiceConnection }}
+        ScriptType: 'FilePath'
+        ScriptPath: '$(Build.SourcesDirectory)/AVD/vm-to-sigversion.ps1'
+        ScriptArguments: '-SubscriptionId ${{ parameters.SubscriptionId }} -VirtualMachineName ${{ parameters.VirtualMachineName }} -ImageVersion ${{ parameters.ImageVersion }} -HostpoolName $(HostpoolName) -HostpoolResourceGroup ${{ parameters.Hostpoolresourcegroup }} -SysprepScript $(Build.SourcesDirectory)/AVD/execute-sysprep-command.ps1'
+        errorActionPreference: 'continue'
+        azurePowerShellVersion: 'LatestVersion'

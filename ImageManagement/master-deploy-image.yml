@@ -1,0 +1,125 @@
+trigger: none
+
+parameters: 
+  - name: subscriptionId
+    type: string
+    displayName: What is the customers subscriptionId
+  - name: ImagePublisher
+    type: string
+  - name: ImageSku
+    type: string
+  - name: ImageOffer
+    type: string
+  - name: osState
+    type: string
+    values:
+    - Generalized
+    - Specialized
+  - name: osType
+    type: string
+    values:
+    - Windows
+    - Linux
+  - name: hyperVGeneration
+    type: string
+    default: V2
+    values:
+    - V1
+    - V2
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  serviceConnection: "ToTenant"
+  major: $(Get-Date -format yyyy)  
+  minor: $(Get-Date -format MMdd)  
+  patch: $[counter(variables['minor'], 0)]
+  parameterFile: '$(Pipeline.Workspace)/drop/Parameters/new-image-parameters.json'
+
+resources:
+  repositories:
+  - repository: Scripts
+    type: git
+    name: Automation/Automation
+    ref: image-management
+  - repository: Templates
+    type: git
+    name: Automation/Templates
+    ref: image-management
+
+
+stages:
+- stage: BuildUp
+  jobs:
+  - job: SetBuildNumber
+    displayName: Change Buildnumber
+    steps:
+    - powershell: |
+        write-host "##vso[build.updatebuildnumber]$(major).$(minor).$(patch)"
+        write-host "##vso[task.setvariable variable=Number;isOutput=true]$(major).$(minor).$(patch)"
+      name: SetMasterBuildName
+  - job: CreateArtifact
+    steps:
+     - checkout: Scripts
+     - script: dir
+     - task: CopyFiles@2
+       displayName: 'Copy Scripts to Staging '
+       inputs:
+        SourceFolder: Imaging
+        Contents: '**'
+        TargetFolder: '$(build.artifactstagingdirectory)/drop'
+        CleanTargetFolder: false
+     - publish:  '$(build.artifactstagingdirectory)/drop'
+       artifact: drop
+- stage: PesterTesting
+  dependsOn:
+    - BuildUp
+  jobs:
+  - template: 'Templates/Tests/execute-pestertest.yml@Templates'
+    parameters:
+      TestScript: $(Pipeline.Workspace)/drop/parameters.tests.ps1
+      PathToTest: $(Pipeline.Workspace)/drop/Parameters
+- stage: BuildSig
+  dependsOn:
+    - PesterTesting
+  jobs:
+  - template: 'Templates/Imaging/deploy-computeGallery.yml@Templates'
+    parameters:
+      serviceConnection: $(serviceConnection)
+      customer: $(System.TeamProject)
+      jobName: DeploySIG
+      taskName: 'sigDeploy'
+      parameterFile: $(parameterFile)
+      subscriptionId: ${{ parameters.subscriptionId }}
+  - template: 'Templates/Imaging/deploy-imagedefinition.yml@Templates'
+    parameters:
+      dependsOn:
+      - DeploySIG
+      serviceConnection: $(serviceConnection)
+      taskName: 'task_deployDefinition'
+      subscriptionId: ${{ parameters.subscriptionId }}
+      parameterFile: $(parameterFile)
+      ImageSku: ${{ parameters.ImageSku }}
+      ImageOffer: ${{ parameters.ImageOffer }}
+      osState: ${{ parameters.osState }}
+      osType: ${{ parameters.osType }}
+      hyperVGeneration: ${{ parameters.hyperVGeneration }}
+- stage: BuildImage
+  dependsOn:
+    - BuildSig
+  variables:
+      DefinitionName: $[ stageDependencies.BuildSig.DeployImageDefinition.outputs['task_deployDefinition.definitionName'] ]
+  jobs:
+  - template: 'Templates/Imaging/deploy-baseImageVersion.yml@Templates'
+    parameters:
+      serviceConnection: $(serviceConnection)
+      taskName: 'imageDeploy'
+      subscriptionId: ${{ parameters.subscriptionId }}
+      parameterFile: $(parameterFile)
+      VirtualMachineName: $(Build.BuildNumber)
+      imageVersionName: $(Build.BuildNumber)
+      ImagePublisher: ${{ parameters.ImagePublisher }}
+      ImageSku: ${{ parameters.ImageSku }}
+      ImageOffer: ${{ parameters.ImageOffer }}
+      DefinitionName: $(DefinitionName)
