@@ -31,7 +31,8 @@ function Download-AppxPackage {
 }
     
 try {
-    Install-Module AppX
+    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+    Install-Module -Name AppX -Force
     Import-Module Appx -usewindowspowershell
 }
 catch {
