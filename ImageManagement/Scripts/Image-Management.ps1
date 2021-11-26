@@ -4,16 +4,16 @@ $parameters = @{
     ResourceGroupName = "rg-roz-avd-01"
     vmName            = "win11-imgmgt"
     Location          = 'westeurope'
-    FileUri           = "https://raw.githubusercontent.com/srozemuller/AVD/main/ImageManagement/Scripts/install-appxApplications.ps1"
-    #Argument          = "-task install -ManifestFileLocation $manifestFile"
+    FileUri           = "https://raw.githubusercontent.com/srozemuller/AVD/main/OperationNorthStar/Scripts/WinGet/Install-WinGetApplication.ps1"
+    Argument          = "-task install -ManifestFileLocation $manifestFile"
     Name              = $appName
     ForceReRun        = $true
 }
-Set-AzVMCustomScriptExtension  -Run 'install-appxApplications.ps1' @parameters
+Set-AzVMCustomScriptExtension  -Run 'Install-WinGetApplication.ps1' @parameters
 
 $removeParameters = @{
     ResourceGroupName = "rg-roz-avd-01"
-    vmName            = "imgmgt"
+    vmName            = "win11-imgmgt"
     Name              = $appName
 }
 Get-AzVMExtension @removeParameters | Remove-AzVMExtension -Force
