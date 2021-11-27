@@ -21,20 +21,17 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       - uses: actions/checkout@v2
+      - name: Azure Login
+        uses: Azure/login@v1
+        with:
+          # Paste output of `az ad sp create-for-rbac` as value of secret variable: AZURE_CREDENTIALS
+          creds: ${{ secrets.AZURE_CREDS }}
+          enable-AzPSSession: true
       - name: Azure PowerShell Action
         uses: Azure/powershell@v1
         with:
-          inlineScript: |
-                #Credentials
-                $passwd = ConvertTo-SecureString ${{ secrets.CLIENT_SECRET }} -AsPlainText -Force
-                $pscredential = New-Object System.Management.Automation.PSCredential('89bedc70-63ce-477d-9643-fe6ca17e59bf', $passwd)
-                Connect-AzAccount -ServicePrincipal -Credential $pscredential -Tenant ${{ secrets.TENANT_ID }} -Subscription ${{ secrets.SUBSCRIPTION_ID }}
+          inlineScript: 
+            ./Scripts/deploy-initial-vm.ps1 -virtualMachineName $GITHUB_JOB -ImagePublisher microsoftwindowsdesktop -ImageOffer windows11preview -ImageSKU win11-21h2-avd
           azPSVersion: latest
-        # Select the value of the ErrorActionPreference variable for executing the script. Options: stop, continue, silentlyContinue. Default is Stop.
-          errorActionPreference: 'stop'
-      # If this is true, this task will fail if any errors are written to the error pipeline, or if any data is written to the Standard Error stream.
-      - name: Trigger Terraform
-        run: | 
-          ./Scripts/deploy-initial-vm.ps1 -subscriptionId ${{ secrets.SUBSCRIPTION_ID }} -ImagePublisher microsoftwindowsdesktop -ImageOffer windows11preview -ImageSKU win11-21h2-avd
-        shell: pwsh  
+
 
