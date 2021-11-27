@@ -1,20 +1,18 @@
 param
 (
-    [Parameter (Mandatory)][string] $subscriptionId,
-    [Parameter (Mandatory)][object] $parameterFile,
-    [Parameter (Mandatory)][string] $VirtualMachineName,
+    [Parameter (Mandatory)]
+    [string] $VirtualMachineName,
     
-    [parameter(ParameterSetName = 'Override')]
-    [Parameter (Mandatory)][string] $ImageSKU,
+    [Parameter (Mandatory)]
+    [string] $ImageSKU,
 
-    [parameter(ParameterSetName = 'Override')]
-    [Parameter (Mandatory)][string] $ImageOffer,
+    [Parameter (Mandatory)]
+    [string] $ImageOffer,
 
-    [parameter(ParameterSetName = 'Override')]
-    [Parameter (Mandatory)][string] $ImagePublisher
+    [Parameter (Mandatory)]
+    [string] $ImagePublisher
 )
 
-$fileParameters = (Get-Content $parameterFile | ConvertFrom-Json).parameters
 function Get-RandomCharacters($length, $characters) {
     $random = 1..$length | ForEach-Object { Get-Random -Maximum $characters.length }
     $private:ofs = ""
@@ -34,28 +32,16 @@ function New-RandomString($type) {
     }
 }
 
-Set-AzContext -Subscription $subscriptionId
-
 $adminUsername = New-RandomString -type string
 $adminPassword = New-RandomString -type password
 $vmLocalAdminSecurePassword = ConvertTo-SecureString $adminPassword -AsPlainText -Force
 $Credential = New-Object System.Management.Automation.PSCredential ($adminUsername, $vmLocalAdminSecurePassword);
-$location = $fileParameters.location
-$vmSize = $fileParameters.baseMachineSettings.virtualMachineSize
+$location = "WestEurope"
+$vmSize = "Standard_B2_MS"
 $computerName = 'initvm'
 $resourceGroupName = "rg-$VirtualMachineName"
-$diskSizeGB = $fileParameters.baseMachineSettings.DiskSizeGb
+$diskSizeGB = 128
 
-switch ($PsCmdlet.ParameterSetName) {
-    Override {
-        Write-Verbose "Override Publisher, Offer and SKU with parameters"
-    }
-    default {
-        $imageSku = $fileParameters.baseMachineSettings.vmGalleryImagePublisher
-        $imageOffer = $fileParameters.baseMachineSettings.vmGalleryImageSKU
-        $imagePublisher = $fileParameters.baseMachineSettings.vmGalleryImageOffer
-    }
-}
 
 $subnetParameters = @{
     Name          = "sbn-$($VirtualMachineName)" 
