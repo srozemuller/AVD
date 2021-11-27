@@ -20,7 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2.4.0
       - name: Azure Login
         uses: Azure/login@v1
         with:
@@ -31,7 +32,5 @@ jobs:
         uses: Azure/powershell@v1
         with:
           inlineScript: 
-            ./Scripts/deploy-initial-vm.ps1 -virtualMachineName $GITHUB_JOB -ImagePublisher microsoftwindowsdesktop -ImageOffer windows11preview -ImageSKU win11-21h2-avd
+            ./ImageManagement/Scripts/deploy-initial-vm.ps1 -virtualMachineName tempVM -ImagePublisher microsoftwindowsdesktop -ImageOffer windows11preview -ImageSKU win11-21h2-avd
           azPSVersion: latest
-
-
