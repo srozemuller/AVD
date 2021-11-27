@@ -32,5 +32,5 @@ jobs:
         uses: Azure/powershell@v1
         with:
           inlineScript: 
-            ./ImageManagement/Scripts/deploy-initial-vm.ps1 -virtualMachineName $GITHUB_JOB -ImagePublisher microsoftwindowsdesktop -ImageOffer windows11preview -ImageSKU win11-21h2-avd
+            ./ImageManagement/Scripts/deploy-initial-vm.ps1 -virtualMachineName ${{ env.GITHUB_JOB }} -ImagePublisher microsoftwindowsdesktop -ImageOffer windows11preview -ImageSKU win11-21h2-avd
           azPSVersion: latest
