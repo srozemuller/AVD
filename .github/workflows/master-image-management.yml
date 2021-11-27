@@ -29,12 +29,10 @@ jobs:
           creds: ${{ secrets.AZURE_CREDS }}
           enable-AzPSSession: true
       - name: Create temp resourcegroup
-        env:
-          runId : ${{ env.GITHUB_JOB }}
         uses: Azure/powershell@v1
         with:
           inlineScript: 
-            New-AzResourceGroup -ResourceGroup "rg-${runId}" -Location "WestEurope" -Force:$true
+            New-AzResourceGroup -ResourceGroup rg-${{ env.GITHUB_JOB }} -Location "WestEurope" -Force:$true
           azPSVersion: latest      
       - name: Create Initial VM
         uses: Azure/powershell@v1
