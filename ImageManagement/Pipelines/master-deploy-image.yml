@@ -31,7 +31,7 @@ pool:
   vmImage: ubuntu-latest
 
 variables:
-  serviceConnection: "ToTenant"
+  serviceConnection: "Rozemuller"
   major: $(Get-Date -format yyyy)  
   minor: $(Get-Date -format MMdd)  
   patch: $[counter(variables['minor'], 0)]
@@ -41,12 +41,7 @@ resources:
   repositories:
   - repository: Scripts
     type: git
-    name: Automation/Automation
-    ref: image-management
-  - repository: Templates
-    type: git
-    name: Automation/Templates
-    ref: image-management
+    name: Rozemuller/Rozemuller
 
 
 stages:
@@ -72,17 +67,9 @@ stages:
         CleanTargetFolder: false
      - publish:  '$(build.artifactstagingdirectory)/drop'
        artifact: drop
-- stage: PesterTesting
-  dependsOn:
-    - BuildUp
-  jobs:
-  - template: 'Templates/Tests/execute-pestertest.yml@Templates'
-    parameters:
-      TestScript: $(Pipeline.Workspace)/drop/parameters.tests.ps1
-      PathToTest: $(Pipeline.Workspace)/drop/Parameters
 - stage: BuildSig
   dependsOn:
-    - PesterTesting
+    - BuildUp
   jobs:
   - template: 'Templates/Imaging/deploy-computeGallery.yml@Templates'
     parameters:

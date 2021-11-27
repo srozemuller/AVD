@@ -45,7 +45,7 @@ jobs:
       azureSubscription: ${{ parameters.ServiceConnection }}
       ScriptType: 'FilePath'
       ScriptPath: '$(Pipeline.Workspace)/drop/deploy-initial-vm.ps1'
-      ScriptArguments: '-subscriptionId ${{ parameters.subscriptionId }} -parameterFile ${{ parameters.parameterFile }} -VirtualMachineName ${{ parameters.VirtualMachineName }} -ImagePublisher ${{ parameters.ImagePublisher }} -ImageSku ${{ parameters.ImageSku }} -ImageOffer ${{ parameters.ImageOffer }}'
+      ScriptArguments: '-ResourceGroupName "rg-${{ parameters.VirtualMachineName }}" -VirtualMachineName ${{ parameters.VirtualMachineName }} -ImagePublisher ${{ parameters.ImagePublisher }} -ImageSku ${{ parameters.ImageSku }} -ImageOffer ${{ parameters.ImageOffer }}'
       errorActionPreference: 'stop'
       azurePowerShellVersion: 'LatestVersion'
   - task: AzurePowerShell@5
