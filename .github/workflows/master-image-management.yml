@@ -43,7 +43,7 @@ jobs:
       - name: Deploy Application
         uses: Azure/powershell@v1
         with:
-          inlineScript: 
+          inlineScript: |
                 $manifestFile = "https://github.com/microsoft/winget-pkgs/tree/master/manifests/g/Google/Chrome/96.0.4664.45"
                 $appName = "Chrome"
                 $parameters = @{
