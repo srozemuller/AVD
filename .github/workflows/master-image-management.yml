@@ -34,7 +34,7 @@ jobs:
           inlineScript: 
             $deployParameters = @{
             ResourceGroup = "rg-imgMgt"
-            Location = $fileParameters.location
+            Location = "WestEurope"
             }
             New-AzResourceGroup @deployParameters -Force:$true
           azPSVersion: latest      
