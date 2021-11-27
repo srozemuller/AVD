@@ -28,15 +28,32 @@ jobs:
           # Paste output of `az ad sp create-for-rbac` as value of secret variable: AZURE_CREDENTIALS
           creds: ${{ secrets.AZURE_CREDS }}
           enable-AzPSSession: true
-      - name: Create Initial VM
+      - name: Create temp resourcegroup
         uses: Azure/powershell@v1
         with:
           inlineScript: 
-            New-AzResourceGroup -ResourceGroup "rg-imgMgt" -Location "WestEurope" -Force:$true
+            New-AzResourceGroup -ResourceGroup rg-imgMgt -Location "WestEurope" -Force:$true
           azPSVersion: latest      
       - name: Create Initial VM
         uses: Azure/powershell@v1
         with:
           inlineScript: 
             ./ImageManagement/Scripts/deploy-initial-vm.ps1 -virtualMachineName imgMgt -ImagePublisher microsoftwindowsdesktop -ImageOffer windows11preview -ImageSKU win11-21h2-avd
+          azPSVersion: latest
+      - name: Deploy Application
+        uses: Azure/powershell@v1
+        with:
+          inlineScript: 
+            $manifestFile = "https://github.com/microsoft/winget-pkgs/tree/master/manifests/g/Google/Chrome/96.0.4664.45"
+            $appName = "Chrome"
+            $parameters = @{
+                ResourceGroupName = "rg-imgMgt"
+                vmName            = "imgmgt"
+                Location          = 'westeurope'
+                FileUri           = "https://raw.githubusercontent.com/srozemuller/AVD/main/OperationNorthStar/Scripts/WinGet/Install-WinGetApplication.ps1"
+                Argument          = "-task install -ManifestFileLocation $manifestFile"
+                Name              = $appName
+                ForceReRun        = $true
+            }
+            Set-AzVMCustomScriptExtension -Run 'Install-WinGetApplication.ps1' @parameters
           azPSVersion: latest
