@@ -1,8 +1,11 @@
 param
 (
     [Parameter (Mandatory)]
+    [string] $resourceGroupName,
+
+    [Parameter (Mandatory)]
     [string] $VirtualMachineName,
-    
+
     [Parameter (Mandatory)]
     [string] $ImageSKU,
 
@@ -39,7 +42,6 @@ $Credential = New-Object System.Management.Automation.PSCredential ($adminUserna
 $location = "WestEurope"
 $vmSize = "Standard_B2ms"
 $computerName = 'initvm'
-$resourceGroupName = "rg-$VirtualMachineName"
 $diskSizeGB = 128
 
 
