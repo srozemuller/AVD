@@ -44,16 +44,16 @@ jobs:
         uses: Azure/powershell@v1
         with:
           inlineScript: 
-            $manifestFile = "https://github.com/microsoft/winget-pkgs/tree/master/manifests/g/Google/Chrome/96.0.4664.45"
-            $appName = "Chrome"
-            $parameters = @{
-                ResourceGroupName = "rg-imgMgt"
-                vmName            = "imgmgt"
-                Location          = 'westeurope'
-                FileUri           = "https://raw.githubusercontent.com/srozemuller/AVD/main/OperationNorthStar/Scripts/WinGet/Install-WinGetApplication.ps1"
-                Argument          = "-task install -ManifestFileLocation $manifestFile"
-                Name              = $appName
-                ForceReRun        = $true
-            }
-            Set-AzVMCustomScriptExtension -Run 'Install-WinGetApplication.ps1' @parameters
+                $manifestFile = "https://github.com/microsoft/winget-pkgs/tree/master/manifests/g/Google/Chrome/96.0.4664.45"
+                $appName = "Chrome"
+                $parameters = @{
+                    ResourceGroupName = "rg-imgMgt"
+                    vmName            = "imgmgt"
+                    Location          = 'westeurope'
+                    FileUri           = "https://raw.githubusercontent.com/srozemuller/AVD/main/OperationNorthStar/Scripts/WinGet/Install-WinGetApplication.ps1"
+                    Argument          = "-task install -ManifestFileLocation $manifestFile"
+                    Name              = $appName
+                    ForceReRun        = $true
+                }
+                Set-AzVMCustomScriptExtension -Run 'Install-WinGetApplication.ps1' @parameters
           azPSVersion: latest
