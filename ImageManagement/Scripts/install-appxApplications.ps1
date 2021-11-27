@@ -32,19 +32,19 @@ function Download-AppxPackage {
     
 try {
     Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
-    Install-Module -Name AppX -Force
-    Import-Module Appx -usewindowspowershell
+    if (-not (Get-Module -Name Appx -ListAvailable )){
+        Install-Module -Name AppX -Force
+        Import-Module Appx -usewindowspowershell
+    }
 }
 catch {
     Throw "Install AppX module failed"
 }
-    
+$downloadLocation = "C:\AppXInstall"
 if (-Not (Test-Path $downloadLocation)) {
     Write-Host -ForegroundColor Green "Creating directory $downloadLocation"
     New-Item -ItemType Directory -Force -Path $downloadLocation
 }
-
-
 Download-AppxPackage "https://www.microsoft.com/en-us/p/app-installer/9nblggh4nns1" -downloadLocation $downloadLocation
 $appInstallerFile = Get-ChildItem -Path $downloadLocation | Where { $_.Name -match 'Microsoft.DesktopAppInstaller' } | Sort-Object | Select-Object -Last 1
 
@@ -53,4 +53,5 @@ try {
 }
 catch {
     "App not installed"
+    $_
 }
