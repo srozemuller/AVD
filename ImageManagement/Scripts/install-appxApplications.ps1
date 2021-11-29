@@ -18,8 +18,8 @@ function Download-AppxPackage {
         }
         $Array = $Array | sort-object @{Expression = { $_[1] }; Descending = $True }
         for ($i = 0; $i -lt $LinksMatch.Count; $i++) {
-            $CurrentFile = $Array[$i][1]
-            $CurrentUrl = $Array[$i][0]
+            $CurrentFile = $Array[1]
+            $CurrentUrl = $Array[0]
             if (-Not (Test-Path "$downloadLocation\$CurrentFile")) {
                 "Downloading $downloadLocation\$CurrentFile"
                 $FilePath = "$downloadLocation\$CurrentFile"
