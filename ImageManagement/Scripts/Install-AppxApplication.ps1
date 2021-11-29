@@ -35,33 +35,29 @@ Begin {
             throw "Location has no appinstaller file"
         }
         Write-Information "Downloading files"
+        $AppWorkingPath = (Join-Path -Path (Join-Path -Path $WorkingPath -ChildPath 'MSIX') -ChildPath $AppName)
+        if (-not(Test-Path $msixPath)) {
+            $AppWorkingPath = (New-Item -ItemType Directory $AppWorkingPath).FullName
+        }
     }
     catch {
         Write-Error "Location not found!!"
         break
     }
-
-    if (-not(Test-Path (Join-Path -Path $WorkingPath -ChildPath $AppName))) {
-        $AppWorkingPath = (New-Item -ItemType Directory -Path (Join-Path -Path $WorkingPath -ChildPath 'MSIX')).FullName
-    }
-    else {
-        $AppWorkingPath = Join-Path -Path $WorkingPath -ChildPath 'MSIX'
-    }
 }
 Process {
-    $templateFilePath = (New-Item -ItemType Directory -Path (Join-Path -Path $AppWorkingPath -ChildPath $appName)).FullName
-    $logFile = Join-Path -Path $templateFilePath -ChildPath 'install.log'
+    $logFile = Join-Path -Path $AppWorkingPath -ChildPath 'install.log'
     $files | ForEach-Object {
         $requestParams = @{
             Uri             = $_.Download_url
-            OutFile         = Join-Path -Path $templateFilePath -ChildPath $_.Name
+            OutFile         = Join-Path -Path $AppWorkingPath -ChildPath $_.Name
             UseBasicParsing = $true
             Headers         = @{"Cache-Control" = "no-cache" }
         }
         Invoke-WebRequest @requestParams
         Write-Output "Downloaded file $($_.Name)" | Out-File $logFile -Append
     }
-    $appInstallerFile = Get-ChildItem -Path $templateFilePath | Where-Object { $_.Name.Endswith('.appinstaller') } | Sort-Object | Select-Object -Last 1
+    $appInstallerFile = Get-ChildItem -Path $AppWorkingPath | Where-Object { $_.Name.Endswith('.appinstaller') } | Sort-Object | Select-Object -Last 1
 
     try {
         Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
