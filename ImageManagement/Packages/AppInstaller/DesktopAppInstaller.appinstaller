@@ -2,7 +2,7 @@
 <AppInstaller
     xmlns="http://schemas.microsoft.com/appx/appinstaller/2021"
     Version="1.0.0.0"
-    Uri="http://mywebservice.azurewebsites.net/appInstallerApp.appinstaller" >
+    Uri="https://github.com/srozemuller/AVD/blob/main/ImageManagement/Packages/AppInstaller/DesktopAppInstaller.appinstaller" >
 
     <MainBundle
         Name="Microsoft.DesktopAppInstaller"
