@@ -35,28 +35,34 @@ Begin {
                 $request = Invoke-WebRequest -Uri $($arguments) -UseBasicParsing:$true
                 $content = $request.Content | ConvertFrom-Json
                 $files = $content | Where-Object { $_.type -eq "file" } | Select-Object download_url, name
+                try {
+                    $files.download_url -match '.appinstaller$'
+                }
+                catch {
+                    throw "Location has no appinstaller file"
+                }
                 Write-Information "Downloading files"
-                $appName = ($files | Where-Object {$_.name -match '.appinstaller$'}).Name.Split(".")[0] 
             }
             catch {
-                Write-Error "Location not found or location has no appinstaller file!!"
+                Write-Error "Location not found!!"
                 break
             }
 
         }
     }
     if (-not(Test-Path (Join-Path -Path $logFilePath -ChildPath $AppName))) {
-        $AppWorkingPath = (New-Item -ItemType Directory -Path (Join-Path -Path $logFilePath -ChildPath $AppName)).FullName
+        $AppWorkingPath = (New-Item -ItemType Directory -Path (Join-Path -Path $logFilePath -ChildPath 'MSIX')).FullName
     }
     else {
-        $AppWorkingPath = Join-Path -Path $logFilePath -ChildPath $AppName
+        $AppWorkingPath = Join-Path -Path $logFilePath -ChildPath 'MSIX'
     }
-    $logFile = Join-Path -Path $AppWorkingPath -ChildPath 'install.log'
 }
 Process {
     switch ($PsCmdlet.ParameterSetName) {
         Manifest {
-            $templateFilePath = (New-Item -ItemType Directory -Path (Join-Path -Path $AppWorkingPath -ChildPath 'MSIX')).FullName
+            $appName = ($files | Where-Object {$_.name -match '.appinstaller$'}).Name.Split(".")[0] 
+            $templateFilePath = (New-Item -ItemType Directory -Path (Join-Path -Path $AppWorkingPath -ChildPath $appName)).FullName
+            $logFile = Join-Path -Path $AppWorkingPath -ChildPath 'install.log'
             $files | ForEach-Object {
                 $requestParams = @{
                     Uri             = $_.Download_url

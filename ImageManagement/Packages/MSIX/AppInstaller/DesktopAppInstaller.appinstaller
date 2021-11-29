@@ -2,25 +2,25 @@
 <AppInstaller
     xmlns="http://schemas.microsoft.com/appx/appinstaller/2021"
     Version="1.0.0.0"
-    Uri="C:\AppXInstall\DesktopAppInstaller\DesktopAppInstaller.appinstaller" >
+    Uri="C:\AppDeployment\MSIX\DesktopAppInstaller\DesktopAppInstaller.appinstaller" >
 
     <MainBundle
         Name="Microsoft.DesktopAppInstaller"
         Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"
         Version="2021.1026.721.0"
-        Uri="C:\AppDeployment\DesktopAppInstaller\Microsoft.DesktopAppInstaller_2021.1026.721.0_neutral_~_8wekyb3d8bbwe.msixbundle" />
+        Uri="C:\AppDeployment\MSIX\DesktopAppInstaller\Microsoft.DesktopAppInstaller_2021.1026.721.0_neutral_~_8wekyb3d8bbwe.msixbundle" />
     <Dependencies>
         <Package 
             Name="Microsoft.VCLibs.140.00.UWPDesktop" 
             Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" 
             Version="14.0.30704.0" 
             ProcessorArchitecture="x64" 
-            Uri="C:\AppDeployment\DesktopAppInstaller\Microsoft.VCLibs.140.00.UWPDesktop_14.0.30704.0_x64__8wekyb3d8bbwe.appx" />
+            Uri="C:\AppDeployment\MSIX\DesktopAppInstaller\Microsoft.VCLibs.140.00.UWPDesktop_14.0.30704.0_x64__8wekyb3d8bbwe.appx" />
         <Package 
             Name="Microsoft.UI.Xaml.2.6" 
             Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" 
             Version="2.62108.18004.0" 
             ProcessorArchitecture="x64" 
-            Uri="C:\AppDeployment\DesktopAppInstaller\Microsoft.UI.Xaml.2.6_2.62108.18004.0_x64__8wekyb3d8bbwe.appx" />
+            Uri="C:\AppDeployment\MSIX\DesktopAppInstaller\Microsoft.UI.Xaml.2.6_2.62108.18004.0_x64__8wekyb3d8bbwe.appx" />
     </Dependencies>
 </AppInstaller>
