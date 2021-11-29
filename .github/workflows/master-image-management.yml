@@ -32,7 +32,7 @@ jobs:
         uses: Azure/powershell@v1
         with:
           inlineScript: 
-            New-AzResourceGroup -ResourceGroup rg-${{ env.GITHUB_JOB }} -Location "WestEurope" -Force:$true
+            New-AzResourceGroup -ResourceGroup rg-$GITHUB_RUN_NUMBER -Location "WestEurope" -Force:$true
           azPSVersion: latest      
       - name: Create Initial VM
         uses: Azure/powershell@v1
