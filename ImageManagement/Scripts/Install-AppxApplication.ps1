@@ -61,12 +61,13 @@ Process {
 
     try {
         Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
-        if (-not (Get-Module -Name Appx -ListAvailable )) {
+        if (-not (Get-Module -Name Appx -ListAvailable)) {
             Install-Module -Name AppX -Force
-            Import-Module Appx -usewindowspowershell
-            Write-Output "Installing application based on $appInstallerFile" | Out-File $logFile -Append
-            $appInstallerFile | Add-AppPackage 
+            Write-Output "Installing Appx PowerShell Module" | Out-File $logFile -Append
         }
+        Import-Module Appx
+        Write-Output "Installing application based on $appInstallerFile" | Out-File $logFile -Append
+        $appInstallerFile | Add-AppPackage 
     }
     catch {
         Throw "Install AppX module failed"
