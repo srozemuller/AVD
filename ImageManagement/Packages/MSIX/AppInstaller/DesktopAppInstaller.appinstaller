@@ -2,26 +2,25 @@
 <AppInstaller
     xmlns="http://schemas.microsoft.com/appx/appinstaller/2021"
     Version="1.0.0.0"
-    Uri="https://raw.githubusercontent.com/srozemuller/AVD/main/ImageManagement/Packages/AppInstaller/DesktopAppInstaller.appinstaller" >
+    Uri="C:\AppXInstall\DesktopAppInstaller\DesktopAppInstaller.appinstaller" >
 
     <MainBundle
         Name="Microsoft.DesktopAppInstaller"
         Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"
-        Version="1.16.12986.0"
-        Uri="https://github.com/srozemuller/AVD/blob/main/ImageManagement/Packages/AppInstaller/Microsoft.DesktopAppInstaller_2021.1026.721.0_neutral_~_8wekyb3d8bbwe.msixbundle" />
-
+        Version="2021.1026.721.0"
+        Uri="C:\AppDeployment\DesktopAppInstaller\Microsoft.DesktopAppInstaller_2021.1026.721.0_neutral_~_8wekyb3d8bbwe.msixbundle" />
     <Dependencies>
         <Package 
             Name="Microsoft.VCLibs.140.00.UWPDesktop" 
             Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" 
             Version="14.0.30704.0" 
             ProcessorArchitecture="x64" 
-            Uri="https://github.com/srozemuller/AVD/blob/main/ImageManagement/Packages/AppInstaller/Microsoft.VCLibs.140.00.UWPDesktop_14.0.30704.0_x64__8wekyb3d8bbwe.appx" />
+            Uri="C:\AppDeployment\DesktopAppInstaller\Microsoft.VCLibs.140.00.UWPDesktop_14.0.30704.0_x64__8wekyb3d8bbwe.appx" />
         <Package 
             Name="Microsoft.UI.Xaml.2.6" 
             Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" 
             Version="2.62108.18004.0" 
             ProcessorArchitecture="x64" 
-            Uri="https://github.com/srozemuller/AVD/blob/main/ImageManagement/Packages/AppInstaller/Microsoft.UI.Xaml.2.6_2.62108.18004.0_x64__8wekyb3d8bbwe.appx" />
+            Uri="C:\AppDeployment\DesktopAppInstaller\Microsoft.UI.Xaml.2.6_2.62108.18004.0_x64__8wekyb3d8bbwe.appx" />
     </Dependencies>
 </AppInstaller>
