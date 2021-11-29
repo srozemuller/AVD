@@ -35,12 +35,14 @@ jobs:
             New-AzResourceGroup -ResourceGroup rg-$GITHUB_RUN_NUMBER -Location "WestEurope" -Force:$true
           azPSVersion: latest      
       - name: Create Initial VM
+        if: false
         uses: Azure/powershell@v1
         with:
           inlineScript: 
             ./ImageManagement/Scripts/deploy-initial-vm.ps1 -resourcegroupname "rg-${runId}" -virtualMachineName imgMgt -ImagePublisher microsoftwindowsdesktop -ImageOffer windows11preview -ImageSKU win11-21h2-avd
           azPSVersion: latest
       - name: Deploy Application
+        if: false
         uses: Azure/powershell@v1
         with:
           inlineScript: |
