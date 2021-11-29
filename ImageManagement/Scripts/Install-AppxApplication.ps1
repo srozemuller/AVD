@@ -36,7 +36,7 @@ Begin {
         }
         Write-Information "Downloading files"
         $AppWorkingPath = (Join-Path -Path (Join-Path -Path $WorkingPath -ChildPath 'MSIX') -ChildPath $AppName)
-        if (-not(Test-Path $msixPath)) {
+        if (-not(Test-Path $AppWorkingPath)) {
             $AppWorkingPath = (New-Item -ItemType Directory $AppWorkingPath).FullName
         }
     }
