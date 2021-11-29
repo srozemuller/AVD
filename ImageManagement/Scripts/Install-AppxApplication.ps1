@@ -67,7 +67,7 @@ Process {
         }
         Import-Module Appx
         Write-Output "Installing application based on $appInstallerFile" | Out-File $logFile -Append
-        $appInstallerFile | Add-AppPackage 
+        Add-AppPackage -AppInstallerFile $appInstallerFile
     }
     catch {
         Throw "Install AppX module failed"
