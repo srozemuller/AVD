@@ -4,7 +4,7 @@ param
     [parameter()]
     [string]$WorkingPath = "C:\AppDeployment",
 
-    [parameter(ParameterSetName = 'Manifest', Position = 1)]
+    [parameter(Mandatory, Position = 1)]
     [string]$AppInstallerLocation
 )
 
