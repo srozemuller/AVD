@@ -66,8 +66,8 @@ Process {
             Write-Output "Installing Appx PowerShell Module" | Out-File $logFile -Append
         }
         Import-Module Appx
-        Write-Output "Installing application based on $appInstallerFile" | Out-File $logFile -Append
-        Add-AppPackage -AppInstallerFile $appInstallerFile
+        Write-Output "Installing application based on $($appInstallerFile.FullName)" | Out-File $logFile -Append
+        Add-AppPackage -AppInstallerFile $appInstallerFile.FullName
     }
     catch {
         Throw "Install AppX module failed"
