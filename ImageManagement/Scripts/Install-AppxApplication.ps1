@@ -14,8 +14,6 @@ Begin {
     if (-not(Test-Path $WorkingPath)) {
         New-Item -ItemType Directory -Path $WorkingPath
     }   
-   
-
     try {
         if ($AppInstallerLocation.Contains('raw.githubusercontent.com')) {
             Write-Verbose "Raw GitHub content provided"
@@ -52,7 +50,7 @@ Begin {
 }
 Process {
     $templateFilePath = (New-Item -ItemType Directory -Path (Join-Path -Path $AppWorkingPath -ChildPath $appName)).FullName
-    $logFile = Join-Path -Path $AppWorkingPath -ChildPath 'install.log'
+    $logFile = Join-Path -Path $templateFilePath -ChildPath 'install.log'
     $files | ForEach-Object {
         $requestParams = @{
             Uri             = $_.Download_url
@@ -63,7 +61,7 @@ Process {
         Invoke-WebRequest @requestParams
         Write-Output "Downloaded file $($_.Name)" | Out-File $logFile -Append
     }
-    $appInstallerFile = Get-ChildItem -Path $templateFilePath | Where { $_.Name.Endswith('.appinstaller') } | Sort-Object | Select-Object -Last 1
+    $appInstallerFile = Get-ChildItem -Path $templateFilePath | Where-Object { $_.Name.Endswith('.appinstaller') } | Sort-Object | Select-Object -Last 1
 
     try {
         Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
@@ -77,5 +75,5 @@ Process {
     catch {
         Throw "Install AppX module failed"
     }
- 
+    Write-Output "Script finished for $appName" | Out-File $logFile -Append
 }
