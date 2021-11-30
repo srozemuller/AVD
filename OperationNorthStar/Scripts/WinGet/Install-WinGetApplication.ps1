@@ -70,18 +70,18 @@ Begin {
             }
         }
     }
-    if (-not(Test-Path (Join-Path -Path $logFilePath -ChildPath $AppName))) {
-        $AppWorkingPath = (New-Item -ItemType Directory -Path (Join-Path -Path $logFilePath -ChildPath $AppName)).FullName
+    if (-not(Test-Path (Join-Path -Path $logFilePath -ChildPath 'YAML'))) {
+        $AppWorkingPath = (New-Item -ItemType Directory -Path (Join-Path -Path $logFilePath -ChildPath 'YAML')).FullName
     }
     else {
-        $AppWorkingPath = Join-Path -Path $logFilePath -ChildPath $AppName
+        $AppWorkingPath = Join-Path -Path $logFilePath -ChildPath 'YAML'
     }
     $logFile = Join-Path -Path $AppWorkingPath -ChildPath 'install.log'
 }
 Process {
     switch ($PsCmdlet.ParameterSetName) {
         Manifest {
-            $templateFilePath = (New-Item -ItemType Directory -Path (Join-Path -Path $AppWorkingPath -ChildPath 'YAML')).FullName
+            $templateFilePath = (New-Item -ItemType Directory -Path (Join-Path -Path $AppWorkingPath -ChildPath $AppName)).FullName
             $files | ForEach-Object {
                 $requestParams = @{
                     Uri             = $_.Download_url
@@ -108,7 +108,7 @@ Process {
 
     Write-Information "executing with: $task $argString $switchArguments" -InformationAction Continue
     Write-Output  "$env:ProgramFiles" | Out-File $logFile -Append
-    $Winget = Get-ChildItem -Path (Join-Path -Path (Join-Path -Path $env:ProgramFiles -ChildPath "WindowsApps") -ChildPath "Microsoft.DesktopAppInstaller*_x64*\AppInstallerCLI.exe")
+    $Winget = (Get-ChildItem -Path (Join-Path -Path (Join-Path -Path $env:ProgramFiles -ChildPath "WindowsApps") -ChildPath "Microsoft.DesktopAppInstaller*_x64*\AppInstallerCLI.exe")).FullName
 
     Write-Output "Installing from $templateFilePath" | Out-File $logFile -Append
     Start-Process -Wait -FilePath $winget -ArgumentList "settings --enable LocalManifestFiles"
