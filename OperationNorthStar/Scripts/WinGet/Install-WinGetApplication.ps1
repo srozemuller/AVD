@@ -111,6 +111,7 @@ Process {
     $Winget = (Get-ChildItem -Path (Join-Path -Path (Join-Path -Path $env:ProgramFiles -ChildPath "WindowsApps") -ChildPath "Microsoft.DesktopAppInstaller*_x64*\AppInstallerCLI.exe")).FullName
 
     Write-Output "Installing from $templateFilePath" | Out-File $logFile -Append
+    Write-Output "Installing with $Winget" | Out-File $logFile -Append
     Start-Process -Wait -FilePath $winget -ArgumentList "settings --enable LocalManifestFiles"
     Start-Process -Wait -FilePath $winget -ArgumentList "$task $argString $switchArguments --log $logFile"
     Write-Output "Install completed" | Out-File $logFile -Append
