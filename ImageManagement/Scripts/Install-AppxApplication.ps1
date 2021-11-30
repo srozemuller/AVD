@@ -29,15 +29,9 @@ Begin {
         $files = $content | Where-Object { $_.type -eq "file" } | Select-Object download_url, name
         try {
             $files.download_url -match '.appinstaller$'
-            $appName = ($files | Where-Object { $_.name -match '.appinstaller$' }).Name.Split(".")[0] 
         }
         catch {
             throw "Location has no appinstaller file"
-        }
-        Write-Information "Downloading files"
-        $AppWorkingPath = (Join-Path -Path (Join-Path -Path $WorkingPath -ChildPath 'MSIX') -ChildPath $AppName)
-        if (-not(Test-Path $AppWorkingPath)) {
-            $AppWorkingPath = (New-Item -ItemType Directory $AppWorkingPath).FullName
         }
     }
     catch {
@@ -46,19 +40,37 @@ Begin {
     }
 }
 Process {
-    $logFile = Join-Path -Path $AppWorkingPath -ChildPath 'install.log'
-    $files | ForEach-Object {
-        $requestParams = @{
-            Uri             = $_.Download_url
-            OutFile         = Join-Path -Path $AppWorkingPath -ChildPath $_.Name
-            UseBasicParsing = $true
-            Headers         = @{"Cache-Control" = "no-cache" }
+    try {
+        Write-Verbose "Downloading files"
+        $appInstallerFile = Get-ChildItem -Path $AppWorkingPath | Where-Object { $_.Name.Endswith('.appinstaller') } | Sort-Object | Select-Object -Last 1
+        [xml]$packageInfo = Get-Content $appInstallerFile.FullName 
+        if ($null -ne $packageInfo.AppInstaller.MainBundle){
+            $MainPackageInfo = $packageInfo.AppInstaller.MainBundle
         }
-        Invoke-WebRequest @requestParams
-        Write-Output "Downloaded file $($_.Name)" | Out-File $logFile -Append
+        else {
+            $MainPackageInfo = $packageInfo.AppInstaller.MainPackage
+        }
+        $appName = $MainPackageInfo.Name
+        $appPackage = $MainPackageInfo.Uri
+        $AppWorkingPath = (Join-Path -Path (Join-Path -Path $WorkingPath -ChildPath 'MSIX') -ChildPath $appName)
+        if (-not(Test-Path $AppWorkingPath)) {
+            $AppWorkingPath = (New-Item -ItemType Directory $AppWorkingPath).FullName
+        }
+        $logFile = Join-Path -Path $AppWorkingPath -ChildPath 'install.log'
+        $files | ForEach-Object {
+            $requestParams = @{
+                Uri             = $_.Download_url
+                OutFile         = Join-Path -Path $AppWorkingPath -ChildPath $_.Name
+                UseBasicParsing = $true
+                Headers         = @{"Cache-Control" = "no-cache" }
+            }
+            Invoke-WebRequest @requestParams
+            Write-Output "Downloaded file $($_.Name)" | Out-File $logFile -Append
+        }
     }
-    $appInstallerFile = Get-ChildItem -Path $AppWorkingPath | Where-Object { $_.Name.Endswith('.appinstaller') } | Sort-Object | Select-Object -Last 1
-
+    catch {
+        Throw "Download package failed, $_"
+    }
     try {
         Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
         if (-not (Get-Module -Name Appx -ListAvailable)) {
@@ -66,12 +78,12 @@ Process {
             Write-Output "Installing Appx PowerShell Module" | Out-File $logFile -Append
         }
         Import-Module Appx
-        Write-Output "Installing application based on $($appInstallerFile.FullName)" | Out-File $logFile -Append
-        Add-AppxProvisionedPackage -Online -SkipLIcense -Packagepath "C:\AppDeployment\MSIX\DesktopAppInstaller\Microsoft.DesktopAppInstaller_2021.1026.721.0_neutral_~_8wekyb3d8bbwe.msixbundle"
-        #Add-AppPackage -AppInstallerFile $appInstallerFile.FullName
+        Write-Output "Installing application based on $appPackage" | Out-File $logFile -Append
+        
+        Add-AppxProvisionedPackage -Online -SkipLicense -Packagepath $appPackage
     }
     catch {
-        Throw "Install AppX module failed"
+        Throw "Install AppX module failed, $_"
     }
     Write-Output "Script finished for $appName" | Out-File $logFile -Append
 }
