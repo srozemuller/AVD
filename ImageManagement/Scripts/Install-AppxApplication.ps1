@@ -67,7 +67,8 @@ Process {
         }
         Import-Module Appx
         Write-Output "Installing application based on $($appInstallerFile.FullName)" | Out-File $logFile -Append
-        Add-AppPackage -AppInstallerFile $appInstallerFile.FullName
+        Add-AppxProvisionedPackage -Online -SkipLIcense -Packagepath "C:\AppDeployment\MSIX\DesktopAppInstaller\Microsoft.DesktopAppInstaller_2021.1026.721.0_neutral_~_8wekyb3d8bbwe.msixbundle"
+        #Add-AppPackage -AppInstallerFile $appInstallerFile.FullName
     }
     catch {
         Throw "Install AppX module failed"
