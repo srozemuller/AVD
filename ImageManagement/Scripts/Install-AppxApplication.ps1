@@ -29,6 +29,7 @@ Begin {
         $files = $content | Where-Object { $_.type -eq "file" } | Select-Object download_url, name
         try {
             $files.download_url -match '.appinstaller$'
+            $appName = ($files | Where-Object { $_.name -match '.appinstaller$' }).Name.Split(".")[0] 
         }
         catch {
             throw "Location has no appinstaller file"
@@ -42,16 +43,6 @@ Begin {
 Process {
     try {
         Write-Verbose "Downloading files"
-        $appInstallerFile = Get-ChildItem -Path $AppWorkingPath | Where-Object { $_.Name.Endswith('.appinstaller') } | Sort-Object | Select-Object -Last 1
-        [xml]$packageInfo = Get-Content $appInstallerFile.FullName 
-        if ($null -ne $packageInfo.AppInstaller.MainBundle){
-            $MainPackageInfo = $packageInfo.AppInstaller.MainBundle
-        }
-        else {
-            $MainPackageInfo = $packageInfo.AppInstaller.MainPackage
-        }
-        $appName = $MainPackageInfo.Name
-        $appPackage = $MainPackageInfo.Uri
         $AppWorkingPath = (Join-Path -Path (Join-Path -Path $WorkingPath -ChildPath 'MSIX') -ChildPath $appName)
         if (-not(Test-Path $AppWorkingPath)) {
             $AppWorkingPath = (New-Item -ItemType Directory $AppWorkingPath).FullName
@@ -67,6 +58,15 @@ Process {
             Invoke-WebRequest @requestParams
             Write-Output "Downloaded file $($_.Name)" | Out-File $logFile -Append
         }
+        $appInstallerFile = Get-ChildItem -Path $AppWorkingPath | Where-Object { $_.Name.Endswith('.appinstaller') } | Sort-Object | Select-Object -Last 1
+        [xml]$packageInfo = Get-Content $appInstallerFile.FullName 
+        if ($null -ne $packageInfo.AppInstaller.MainBundle){
+            $MainPackageInfo = $packageInfo.AppInstaller.MainBundle
+        }
+        else {
+            $MainPackageInfo = $packageInfo.AppInstaller.MainPackage
+        }
+        $appPackage = $MainPackageInfo.Uri
     }
     catch {
         Throw "Download package failed, $_"
