@@ -36,7 +36,7 @@ jobs:
           inlineScript: |
                   $major = Get-Date -format yyyy
                   $minor = Get-Date -format MMdd
-                  $patch = ${{ env:GITHUB_RUN_NUMBER }}
+                  $patch = $env:GITHUB_RUN_NUMBER
                   $($major.$minor.$patch)
                   echo "identifier=$($major.$minor.$patch)" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
                   Write-Output "::set-output name=identifier2::$($major.$minor.$patch)"
