@@ -41,30 +41,27 @@ jobs:
                   Write-Host " minor is $minor "
                   Write-Host " patch is $patch "
                   Write-Host " identi is $major.$minor.$patch"
-                  echo "identifier=$major.$minor.$patch" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
-                  Write-Output "::set-output name=identifier2::$major.$minor.$patch"
+                  Write-Output "identifier=$major.$minor.$patch" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
           azPSVersion: latest     
       - name: step-2
         run: echo "${{ steps.identifier.outputs.identifier2 }}"
       - name: step-3
         run: echo "${{ env.identifier }}"
       - name: Create temp resourcegroup
-        if: false
         id: tempRg
         uses: Azure/powershell@v1
         with:
           inlineScript: |
                 $resourceGroup = New-AzResourceGroup -ResourceGroup rg-"${{ env.identifier }}" -Location "WestEurope" -Force:$true
-                Write-Host '::set-output name=resourceGroupName::$($resourceGroup.ResourceGroupName)'
+                Write-Output "resourceGroupName=$($resourceGroup.ResourceGroupName)" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
           azPSVersion: latest      
       - name: Create Initial VM
-        if: false
         uses: Azure/powershell@v1
         with:
           inlineScript: |
                 $parameters = @{
-                  resourcegroupname = "${{ steps.tempRg.outputs.resourceGroupName }}"
-                  virtualMachineName = "${{ steps.identifier.outputs.identifier }}"
+                  resourcegroupname = "${{ env.resourceGroupName }}"
+                  virtualMachineName = "${{ env.identifier }}"
                   ImagePublisher = microsoftwindowsdesktop 
                   ImageOffer = windows11preview
                   ImageSKU = win11-21h2-avd
