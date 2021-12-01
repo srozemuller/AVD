@@ -61,9 +61,9 @@ jobs:
                 $parameters = @{
                   resourcegroupname = "${{ env.resourceGroupName }}"
                   virtualMachineName = "${{ env.identifier }}"
-                  ImagePublisher = microsoftwindowsdesktop 
-                  ImageOffer = windows11preview
-                  ImageSKU = win11-21h2-avd
+                  ImagePublisher = "microsoftwindowsdesktop"
+                  ImageOffer = "windows11preview"
+                  ImageSKU = "win11-21h2-avd"
                 }
                 ./ImageManagement/Scripts/deploy-initial-vm.ps1 @parameters
           azPSVersion: latest
