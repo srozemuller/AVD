@@ -23,7 +23,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2.4.0
       - name: Azure Login
-        if: false
         uses: Azure/login@v1
         with:
           # Paste output of `az ad sp create-for-rbac` as value of secret variable: AZURE_CREDENTIALS
