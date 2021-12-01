@@ -36,14 +36,14 @@ jobs:
                   $major = $(Get-Date -format yyyy)  
                   $minor = $(Get-Date -format MMdd)  
                   $patch = $env:GITHUB_RUN_NUMBER
-                  Write-Host '::set-output name=identifier::$(major).$(minor).$(patch)'
+                  Write-Host "identifier=$($major.$minor.$patch)" >> $GITHUB_ENV
           azPSVersion: latest     
       - name: Create temp resourcegroup
         id: tempRg
         uses: Azure/powershell@v1
         with:
           inlineScript: |
-                $resourceGroup = New-AzResourceGroup -ResourceGroup rg-"${{ steps.identifier.outputs.identifier }}" -Location "WestEurope" -Force:$true
+                $resourceGroup = New-AzResourceGroup -ResourceGroup rg-"${{ env.identifier }}" -Location "WestEurope" -Force:$true
                 Write-Host '::set-output name=resourceGroupName::$($resourceGroup.ResourceGroupName)'
           azPSVersion: latest      
       - name: Create Initial VM
