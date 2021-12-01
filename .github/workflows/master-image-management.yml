@@ -37,8 +37,14 @@ jobs:
                   $minor = $(Get-Date -format MMdd)  
                   $patch = $env:GITHUB_RUN_NUMBER
                   Write-Host "identifier=$($major.$minor.$patch)" >> $GITHUB_ENV
+                  echo "::set-output name=identifier2::$($major.$minor.$patch)"
           azPSVersion: latest     
+      - name: step-2
+        run: echo "${{ steps.identifier.outputs.identifier2 }}"
+      - name: step-3
+        run: echo "${{ env.identifier }}"
       - name: Create temp resourcegroup
+        if: false
         id: tempRg
         uses: Azure/powershell@v1
         with:
