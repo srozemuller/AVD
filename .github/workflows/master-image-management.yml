@@ -28,18 +28,37 @@ jobs:
           # Paste output of `az ad sp create-for-rbac` as value of secret variable: AZURE_CREDENTIALS
           creds: ${{ secrets.AZURE_CREDS }}
           enable-AzPSSession: true
-      - name: Create temp resourcegroup
+      - name: Create unique identifier
+        id: identifier
         uses: Azure/powershell@v1
         with:
-          inlineScript: 
-            New-AzResourceGroup -ResourceGroup rg-$env:GITHUB_RUN_NUMBER -Location "WestEurope" -Force:$true
+          inlineScript: |
+                  $major = $(Get-Date -format yyyy)  
+                  $minor = $(Get-Date -format MMdd)  
+                  $patch = $env:GITHUB_RUN_NUMBER
+                  Write-Host '::set-output name=identifier::$(major).$(minor).$(patch)'
+          azPSVersion: latest     
+      - name: Create temp resourcegroup
+        id: tempRg
+        uses: Azure/powershell@v1
+        with:
+          inlineScript: |
+                $resourceGroup = New-AzResourceGroup -ResourceGroup rg-"${{ steps.identifier.outputs.identifier }}" -Location "WestEurope" -Force:$true
+                Write-Host '::set-output name=resourceGroupName::$($resourceGroup.ResourceGroupName)'
           azPSVersion: latest      
       - name: Create Initial VM
         if: false
         uses: Azure/powershell@v1
         with:
-          inlineScript: 
-            ./ImageManagement/Scripts/deploy-initial-vm.ps1 -resourcegroupname "rg-${runId}" -virtualMachineName imgMgt -ImagePublisher microsoftwindowsdesktop -ImageOffer windows11preview -ImageSKU win11-21h2-avd
+          inlineScript: |
+                $parameters = @{
+                  resourcegroupname = "${{ steps.tempRg.outputs.resourceGroupName }}"
+                  virtualMachineName = "${{ steps.identifier.outputs.identifier }}"
+                  ImagePublisher = microsoftwindowsdesktop 
+                  ImageOffer = windows11preview
+                  ImageSKU = win11-21h2-avd
+                }
+                ./ImageManagement/Scripts/deploy-initial-vm.ps1 @parameters
           azPSVersion: latest
       - name: Deploy Application
         if: false
