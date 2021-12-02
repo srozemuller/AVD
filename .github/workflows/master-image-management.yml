@@ -28,18 +28,44 @@ jobs:
           # Paste output of `az ad sp create-for-rbac` as value of secret variable: AZURE_CREDENTIALS
           creds: ${{ secrets.AZURE_CREDS }}
           enable-AzPSSession: true
-      - name: Create temp resourcegroup
+      - name: Create unique identifier
+        id: identifier
         uses: Azure/powershell@v1
         with:
-          inlineScript: 
-            New-AzResourceGroup -ResourceGroup rg-$env:GITHUB_RUN_NUMBER -Location "WestEurope" -Force:$true
+          inlineScript: |
+                  $major = Get-Date -format yyyy
+                  $minor = Get-Date -format MMdd
+                  $patch = $env:GITHUB_RUN_NUMBER
+                  Write-Host " major $major"
+                  Write-Host " minor is $minor "
+                  Write-Host " patch is $patch "
+                  Write-Host " identi is $major.$minor.$patch"
+                  Write-Output "identifier=$major.$minor.$patch" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+          azPSVersion: latest     
+      - name: step-2
+        run: echo "${{ steps.identifier.outputs.identifier2 }}"
+      - name: step-3
+        run: echo "${{ env.identifier }}"
+      - name: Create temp resourcegroup
+        id: tempRg
+        uses: Azure/powershell@v1
+        with:
+          inlineScript: |
+                $resourceGroup = New-AzResourceGroup -ResourceGroup rg-"${{ env.identifier }}" -Location "WestEurope" -Force:$true
+                Write-Output "resourceGroupName=$($resourceGroup.ResourceGroupName)" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
           azPSVersion: latest      
       - name: Create Initial VM
-        if: false
         uses: Azure/powershell@v1
         with:
-          inlineScript: 
-            ./ImageManagement/Scripts/deploy-initial-vm.ps1 -resourcegroupname "rg-${runId}" -virtualMachineName imgMgt -ImagePublisher microsoftwindowsdesktop -ImageOffer windows11preview -ImageSKU win11-21h2-avd
+          inlineScript: |
+                $parameters = @{
+                  resourcegroupname = "${{ env.resourceGroupName }}"
+                  virtualMachineName = "${{ env.identifier }}"
+                  ImagePublisher = "microsoftwindowsdesktop"
+                  ImageOffer = "windows11preview"
+                  ImageSKU = "win11-21h2-avd"
+                }
+                ./ImageManagement/Scripts/deploy-initial-vm.ps1 @parameters
           azPSVersion: latest
       - name: Deploy Application
         if: false
