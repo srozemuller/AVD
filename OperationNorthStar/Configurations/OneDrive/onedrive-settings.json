@@ -109,7 +109,7 @@
               "simpleSettingValue": {
                 "@odata.type": "#microsoft.graph.deviceManagementConfigurationStringSettingValue",
                 "settingValueTemplateReference": null,
-                "value": "d9e7bad9-ae68-4a71-9c92-8508128134a2"
+                "value": "<--tenantId-->"
               }
             }
           ]
