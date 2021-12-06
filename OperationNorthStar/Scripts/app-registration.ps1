@@ -34,6 +34,7 @@ function Get-ServicePrincipal {
     $servicePrincipalInfo = (Invoke-RestMethod -Uri $url -Method GET -Headers $script:token).value
     return $servicePrincipalInfo
 }
+
 function New-Application {
     param
     (
@@ -49,7 +50,29 @@ function New-Application {
     $newApp = Invoke-RestMethod -Uri $url -Method POST -Body $postBody -Headers $script:token
     return $newApp
 }
+function Update-Application {
+    param
+    (
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [string]$AppId,
+        [Parameter()]
+        [ValidateNotNullOrEmpty()]
+        [object]$IdentifierUris,
 
+        [Parameter()]
+        [ValidateNotNullOrEmpty()]
+        [string]$GroupMembershipClaims
+    )
+    $url = $script:mainUrl + "/applications/" + $appId
+    $body = @{
+        displayName = $AppDisplayName
+        identifierUris = $IdentifierUris
+        groupMembershipClaims = $GroupMembershipClaims
+    }
+    $postBody = $body | ConvertTo-Json
+    Invoke-RestMethod -Uri $url -Method PATCH -Body $postBody -UseBasicParsing -Headers $script:token -ContentType "application/json"
+}
 function New-ApplicationPassword {
     param
     (
@@ -95,11 +118,16 @@ function New-SPFromApp {
     (
         [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
-        [string]$AppId
+        [string]$AppId,
+
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [string]$ServicePrincipalType 
     )
     $url = "$($script:mainUrl)/servicePrincipals"
     $body = @{
         appId = $AppId
+        ServicePrincipalType = $ServicePrincipalType 
     }
     $postBody = $body | ConvertTo-Json
     $servicePrincipal = Invoke-RestMethod -Uri $url -Method POST -Body $postBody -Headers $script:token
