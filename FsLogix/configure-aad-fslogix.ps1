@@ -22,24 +22,25 @@ $saShareParameters = @{
 $saShare = $storageAccount | New-AzRmStorageShare @saShareParameters
 $saShare
 
-
+$script:AzureUrl = "https://management.azure.com/"
 # Add contributor role at subscription level
-$script:token = GetAuthToken -resource "https://management.azure.com/"
+$script:token = GetAuthToken -resource $script:AzureUrl
 $guid = (new-guid).guid
 $smbShareContributorRoleId = "0c867c2a-1d8c-454a-a3db-ab2ea1bdc8bb"
 $roleDefinitionId = "/subscriptions/" + $(get-azcontext).Subscription.id + "/providers/Microsoft.Authorization/roleDefinitions/" + $smbShareContributorRoleId
-$url = "https://management.azure.com/" + $storageAccount.id + "/providers/Microsoft.Authorization/roleAssignments/$($guid)?api-version=2018-07-01"
+$url = $script:AzureUrl + $storageAccount.id + "/providers/Microsoft.Authorization/roleAssignments/$($guid)?api-version=2018-07-01"
 $body = @{
     properties = @{
         roleDefinitionId = $roleDefinitionId
-        principalId      = "924f209a-744c-4470-99d4-02d90f698438"
+        principalId      = "924f209a-744c-4470-99d4-02d90f698438" # AD Group ID
+        scope            = $storageAccount.id
     }
 }
 $jsonBody = $body | ConvertTo-Json -Depth 6
 Invoke-RestMethod -Uri $url -Method PUT -Body $jsonBody -headers $script:token
 
 # Kerberos enable
-$Uri = "https://management.azure.com/" + $storageAccount.id + "?api-version=2021-04-01"
+$Uri = $script:AzureUrl + $storageAccount.id + "?api-version=2021-04-01"
 $json = 
 @{
     properties = @{
@@ -120,3 +121,31 @@ $postBody = $body | ConvertTo-Json -Depth 6
 Invoke-RestMethod -Uri $url -Method PATCH -Body $json -Headers $script:graphWindowsToken
 
 
+
+$vm = Get-AzVM -name "BPS-ADC-01" -ResourceGroupName "RG_BPS_WE_P_ActiveDirectory"
+$output = $vm | invoke-azvmruncommand -CommandId 'RunPowerShellScript' -ScriptPath 'local-domaininfo.ps1'
+$domainGuid = ($output.Value[0].Message -replace '(?<!:.*):', '=' | ConvertFrom-StringData).domainGuid
+$domainName = ($output.Value[0].Message -replace '(?<!:.*):', '=' | ConvertFrom-StringData).domainName
+$domainSid = ($output.Value[0].Message -replace '(?<!:.*):', '=' | ConvertFrom-StringData).domainSid
+$forestName = ($output.Value[0].Message -replace '(?<!:.*):', '=' | ConvertFrom-StringData).forestName
+$netBiosDomainName = ($output.Value[0].Message -replace '(?<!:.*):', '=' | ConvertFrom-StringData).netBiosDomainName
+$azureStorageSid = ($output.Value[0].Message -replace '(?<!:.*):', '=' | ConvertFrom-StringData).azureStorageSid
+
+$body = @{
+    properties = @{
+        azureFilesIdentityBasedAuthentication = @{
+            directoryServiceOptions   = "AADKERB";
+            activeDirectoryProperties = @{
+                domainName        = $domainName
+                netBiosDomainName = $netBiosDomainName
+                forestName        = $forestName
+                domainGuid        = $domainGuid
+                domainSid         = $domainSid
+                azureStorageSid   = $azureStorageSid
+            }
+        }
+    }
+}
+$Uri = $script:AzureUrl + $storageAccount.Id + "?api-version=2021-04-01"
+$jsonBody = $body | ConvertTo-Json -Depth 99
+Invoke-RestMethod -Uri $Uri -ContentType 'application/json' -Method PATCH -Headers $script:token -Body $jsonBody
