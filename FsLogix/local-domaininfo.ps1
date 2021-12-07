@@ -18,7 +18,7 @@ try {
         Write-Error "Please install and/or import the ActiveDirectory PowerShell module." -ErrorAction Stop;
     }
 
-    $returnObject = [hashtable]@{
+    $returnObject = [pscustomobject]@{
         domainGuid        = $domainInformation.ObjectGUID.ToString()
         domainName        = $domainInformation.DnsRoot
         domainSid         = $domainInformation.DomainSID.Value
