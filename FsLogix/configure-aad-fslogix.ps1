@@ -149,3 +149,21 @@ $body = @{
 $Uri = $script:AzureUrl + $storageAccount.Id + "?api-version=2021-04-01"
 $jsonBody = $body | ConvertTo-Json -Depth 99
 Invoke-RestMethod -Uri $Uri -ContentType 'application/json' -Method PATCH -Headers $script:token -Body $jsonBody
+
+
+
+# Testing
+$generalParameters = @{
+    ResourceGroupName = "AAD-VM-0"
+    vmName            = "RG_BPS_WE_AVD_MU"
+    Name              = "FSLogixTest"
+    Run               = 'test-fslogixDeployment.ps1'
+}
+$extensionParameters = @{
+    Location   = 'westeurope'
+    FileUri    = "https://raw.githubusercontent.com/srozemuller/AVD/main/FsLogix/test-fslogix-deployment.ps1"
+    ForceReRun = $true
+}
+Set-AzVMCustomScriptExtension @generalParameters @extensionParameters
+
+Get-AzVMExtension @generalParameters | Remove-AzVMExtension -Force
