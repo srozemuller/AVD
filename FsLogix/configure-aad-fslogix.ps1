@@ -1,5 +1,14 @@
 $resourceGroupName = "RG-ROZ-STOR-01"
 $location = "WestEurope"
+
+$script:AzureUrl = "https://management.azure.com/"
+$script:AzureToken = GetAuthToken -resource $script:AzureUrl
+
+$script:graphWindowsUrl = "https://graph.windows.net"
+$script:graphWindowsToken = GetAuthToken -resource $script:graphWindowsUrl
+
+$Script:GraphApiUrl = "https://graph.microsoft.com"
+$script:graphApiToken = GetAuthToken -resource $Script:GraphApiUrl 
 $rgParameters = @{
     resourceGroupName = $resourceGroupName
     location          = $location 
@@ -22,8 +31,25 @@ $saShareParameters = @{
 $saShare = $storageAccount | New-AzRmStorageShare @saShareParameters
 $saShare
 
-$script:AzureUrl = "https://management.azure.com/"
-$script:token = GetAuthToken -resource $script:AzureUrl
+# Kerberos enable
+$Uri = $script:AzureUrl + $storageAccount.id + "?api-version=2021-04-01"
+$json = 
+@{
+    properties = @{
+        azureFilesIdentityBasedAuthentication = @{
+            directoryServiceOptions = "AADKERB"
+        }
+    }
+}
+$json = $json | ConvertTo-Json -Depth 99
+try {
+    Invoke-RestMethod -Uri $Uri -ContentType 'application/json' -Method PATCH -Headers $script:AzureToken -Body $json;
+}
+catch {
+    Write-Host $_.Exception.ToString()
+    Write-Error -Message "Caught exception setting Storage Account directoryServiceOptions=AADKERB: $_" -ErrorAction Stop
+} 
+
 $guid = (new-guid).guid
 $smbShareContributorRoleId = "0c867c2a-1d8c-454a-a3db-ab2ea1bdc8bb"
 $roleDefinitionId = "/subscriptions/" + $(get-azcontext).Subscription.id + "/providers/Microsoft.Authorization/roleDefinitions/" + $smbShareContributorRoleId
@@ -36,28 +62,8 @@ $body = @{
     }
 }
 $jsonBody = $body | ConvertTo-Json -Depth 6
-Invoke-RestMethod -Uri $url -Method PUT -Body $jsonBody -headers $script:token
+Invoke-RestMethod -Uri $url -Method PUT -Body $jsonBody -headers $script:AzureToken
 
-# Kerberos enable
-$Uri = $script:AzureUrl + $storageAccount.id + "?api-version=2021-04-01"
-$json = 
-@{
-    properties = @{
-        azureFilesIdentityBasedAuthentication = @{
-            directoryServiceOptions = "AADKERB"
-        }
-    }
-}
-$json = $json | ConvertTo-Json -Depth 99
-$token = $(Get-AzAccessToken).Token
-$headers = @{ Authorization = "Bearer $token" }
-try {
-    Invoke-RestMethod -Uri $Uri -ContentType 'application/json' -Method PATCH -Headers $Headers -Body $json;
-}
-catch {
-    Write-Host $_.Exception.ToString()
-    Write-Error -Message "Caught exception setting Storage Account directoryServiceOptions=AADKERB: $_" -ErrorAction Stop
-} 
 
 # Create app registration
 $servicePrincipalNames = [System.Collections.Arraylist]::New()
@@ -65,8 +71,7 @@ $servicePrincipalNames.Add('HTTP/{0}.file.core.windows.net' -f $storageAccount.S
 $servicePrincipalNames.Add('CIFS/{0}.file.core.windows.net' -f $storageAccount.StorageAccountName) | Out-Null
 $servicePrincipalNames.Add('HOST/{0}.file.core.windows.net' -f $storageAccount.StorageAccountName) | Out-Null
 
-$script:graphWindowsUrl = "https://graph.windows.net"
-$script:graphWindowsToken = GetAuthToken -resource $script:graphWindowsUrl
+
 
 $url = $script:graphWindowsUrl + "/" + $(get-azcontext).Tenant.Id + "/applications?api-version=1.6"
 $body = @{
@@ -99,21 +104,22 @@ $permissions = @{
         }
     )
 }
-$script:token = GetAuthToken -resource "https://graph.microsoft.com"
+Invoke-RestMethod -method GET -headers $script:graphApiToken -uri "$($script:mainUrl)/applications/$($application.objectid)"
 Add-ApplicationPermissions -AppId $application.ObjectId -permissions $permissions 
 
 # Create SP
-$newSp = New-SPFromApp -AppId $application.AppId  -ServicePrincipalType "Application"
+$newSp = New-SPFromApp -AppId $application.appId  -ServicePrincipalType "Application"
 ### 059f3e1f-c67d-4d58-a1f9-d58cfe8a49e3 is per tenant verschillend (kan)
-Consent-ApplicationPermissions -ServicePrincipalId $servicePrincipal.objectid  -ResourceId "059f3e1f-c67d-4d58-a1f9-d58cfe8a49e3" -Scope "open.id user.read profile"
+$graphAggregatorServiceObjectId = "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70"
+Consent-ApplicationPermissions -ServicePrincipalId $newSp.id  -ResourceId $graphAggregatorServiceObjectId -Scope "open.id user.read profile"
 
 $keyName = "kerb1"
-$storageAccount  | New-AzStorageAccountKey -KeyName $keyName -ErrorAction Stop 
+$storageAccount | New-AzStorageAccountKey -KeyName $keyName -ErrorAction Stop 
 # Assign password to service principal
 $kerbKey1 =  $storageAccount | Get-AzStorageAccountKey -ListKerbKey | Where-Object { $_.KeyName -eq $keyName }
 $aadPasswordBuffer = [System.Linq.Enumerable]::Take([System.Convert]::FromBase64String($kerbKey1.Value), 32);
 $password = "kk:" + [System.Convert]::ToBase64String($aadPasswordBuffer);
-$url = "https://graph.windows.net/" + $(get-azcontext).Tenant.id + "/servicePrincipals/" + $servicePrincipal.objectid + "?api-version=1.6"
+$url = "https://graph.windows.net/" + $(get-azcontext).Tenant.id + "/servicePrincipals/" + $newSp.id + "?api-version=1.6"
 $body = @{
     passwordCredentials = @(
         @{
@@ -126,7 +132,6 @@ $body = @{
 }
 $postBody = $body | ConvertTo-Json -Depth 6
 Invoke-RestMethod -Uri $url -Method PATCH -Body $postBody -Headers $script:graphWindowsToken
-
 
 $vm = Get-AzVM -name "vm-rz-dc001" -ResourceGroupName "rg-roz-avd-01"
 $output = $vm | invoke-azvmruncommand -CommandId 'RunPowerShellScript' -ScriptPath 'local-domaininfo.ps1'
@@ -155,7 +160,7 @@ $body = @{
 $Uri = $script:AzureUrl + $storageAccount.Id + "?api-version=2021-04-01"
 $script:token = GetAuthToken -resource $script:AzureUrl
 $jsonBody = $body | ConvertTo-Json -Depth 99
-Invoke-RestMethod -Uri $Uri -ContentType 'application/json' -Method PATCH -Headers $script:token -Body $jsonBody
+Invoke-RestMethod -Uri $Uri -ContentType 'application/json' -Method PATCH -Headers $script:AzureToken -Body $jsonBody
 
 
 
