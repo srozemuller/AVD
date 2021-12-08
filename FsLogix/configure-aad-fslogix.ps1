@@ -86,9 +86,6 @@ $servicePrincipalNames = New-Object string[] 3
 $servicePrincipalNames[0] = 'HTTP/{0}.file.core.windows.net' -f $storageAccount.StorageAccountName
 $servicePrincipalNames[1] = 'CIFS/{0}.file.core.windows.net' -f $storageAccount.StorageAccountName
 $servicePrincipalNames[2] = 'HOST/{0}.file.core.windows.net' -f $storageAccount.StorageAccountName
-$application = New-AzureADApplication -DisplayName $storageAccount.StorageAccountName -IdentifierUris $servicePrincipalNames -GroupMembershipClaims "All";
-$servicePrincipal = New-AzureADServicePrincipal -AccountEnabled $true -AppId $application.AppId -ServicePrincipalType "Application";
-
 
 # assign permissions
 $permissions = @{
@@ -101,10 +98,14 @@ $permissions = @{
         @{
             id   = "e1fe6dd8-ba31-4d61-89e7-88639da4683d" #user.read
             type = "Scope"
+        },
+        @{
+            id   = "14dad69e-099b-42c9-810b-d002981feec1" #profile
+            type = "Scope"
         }
     )
 }
-Invoke-RestMethod -method GET -headers $script:graphApiToken -uri "$($script:mainUrl)/applications/$($application.objectid)"
+(Invoke-RestMethod -method GET -headers $script:graphApiToken -uri "$($script:mainUrl)/applications/$($application.objectid)").requiredResourceAccess.resourceAccess
 Add-ApplicationPermissions -AppId $application.ObjectId -permissions $permissions 
 
 # Create SP
