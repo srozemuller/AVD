@@ -1,4 +1,4 @@
-$resourceGroupName = "RG_BPS_WE_STORAGE_MU"
+$resourceGroupName = "RG-ROZ-STOR-01"
 $location = "WestEurope"
 $rgParameters = @{
     resourceGroupName = $resourceGroupName
@@ -15,7 +15,7 @@ $storageAccount = $resourceGroup | New-AzStorageAccount @storageAccountParameter
 $storageAccount 
 
 $saShareParameters = @{
-    Name       = "profiles"
+    Name       = "profiles2"
     AccessTier = "Premium"
     QuotaGiB   = 1024
 }
@@ -23,7 +23,6 @@ $saShare = $storageAccount | New-AzRmStorageShare @saShareParameters
 $saShare
 
 $script:AzureUrl = "https://management.azure.com/"
-# Add contributor role at subscription level
 $script:token = GetAuthToken -resource $script:AzureUrl
 $guid = (new-guid).guid
 $smbShareContributorRoleId = "0c867c2a-1d8c-454a-a3db-ab2ea1bdc8bb"
@@ -32,7 +31,7 @@ $url = $script:AzureUrl + $storageAccount.id + "/providers/Microsoft.Authorizati
 $body = @{
     properties = @{
         roleDefinitionId = $roleDefinitionId
-        principalId      = "924f209a-744c-4470-99d4-02d90f698438" # AD Group ID
+        principalId      = "f119eef3-fee6-44c6-a692-4d761eccaf7e" # AD Group ID
         scope            = $storageAccount.id
     }
 }
@@ -69,14 +68,22 @@ $servicePrincipalNames.Add('HOST/{0}.file.core.windows.net' -f $storageAccount.S
 $script:graphWindowsUrl = "https://graph.windows.net"
 $script:graphWindowsToken = GetAuthToken -resource $script:graphWindowsUrl
 
-$url = $script:graphWindowsUrl + "/761bd9eb-2b5e-4a6c-8608-73ae0195169e/applications?api-version=1.6"
+$url = $script:graphWindowsUrl + "/" + $(get-azcontext).Tenant.Id + "/applications?api-version=1.6"
 $body = @{
     displayName           = $storageAccount.StorageAccountName
-    identifierUris        = @($servicePrincipalNames)
+    identifierUris        = $servicePrincipalNames
     GroupMembershipClaims = "All"
 }
 $postBody = $body | ConvertTo-Json -Depth 4
 $application = Invoke-RestMethod -Uri $url -Method POST -Body $postBody -Headers $script:graphWindowsToken -UseBasicParsing
+
+$servicePrincipalNames = New-Object string[] 3
+$servicePrincipalNames[0] = 'HTTP/{0}.file.core.windows.net' -f $storageAccount.StorageAccountName
+$servicePrincipalNames[1] = 'CIFS/{0}.file.core.windows.net' -f $storageAccount.StorageAccountName
+$servicePrincipalNames[2] = 'HOST/{0}.file.core.windows.net' -f $storageAccount.StorageAccountName
+$application = New-AzureADApplication -DisplayName $storageAccount.StorageAccountName -IdentifierUris $servicePrincipalNames -GroupMembershipClaims "All";
+$servicePrincipal = New-AzureADServicePrincipal -AccountEnabled $true -AppId $application.AppId -ServicePrincipalType "Application";
+
 
 # assign permissions
 $permissions = @{
@@ -98,14 +105,15 @@ Add-ApplicationPermissions -AppId $application.ObjectId -permissions $permission
 # Create SP
 $newSp = New-SPFromApp -AppId $application.AppId  -ServicePrincipalType "Application"
 ### 059f3e1f-c67d-4d58-a1f9-d58cfe8a49e3 is per tenant verschillend (kan)
-Consent-ApplicationPermissions -ServicePrincipalId $newSp.id  -ResourceId "059f3e1f-c67d-4d58-a1f9-d58cfe8a49e3" -Scope "open.id user.read"
+Consent-ApplicationPermissions -ServicePrincipalId $servicePrincipal.objectid  -ResourceId "059f3e1f-c67d-4d58-a1f9-d58cfe8a49e3" -Scope "open.id user.read profile"
 
-#$storageAccount = get-azstorageaccount -ResourceGroupName "RG_BPS_WE_STORAGE_MU" -name fslogix4743
-# Assign password
-$kerbKey1 =  $storageAccount | Get-AzStorageAccountKey -ListKerbKey | Where-Object { $_.KeyName -like "kerb1" }
+$keyName = "kerb1"
+$storageAccount  | New-AzStorageAccountKey -KeyName $keyName -ErrorAction Stop 
+# Assign password to service principal
+$kerbKey1 =  $storageAccount | Get-AzStorageAccountKey -ListKerbKey | Where-Object { $_.KeyName -eq $keyName }
 $aadPasswordBuffer = [System.Linq.Enumerable]::Take([System.Convert]::FromBase64String($kerbKey1.Value), 32);
 $password = "kk:" + [System.Convert]::ToBase64String($aadPasswordBuffer);
-$url = "https://graph.windows.net/" + $(get-azcontext).Tenant.id + "/servicePrincipals/" + $newSp.id + "?api-version=1.6"
+$url = "https://graph.windows.net/" + $(get-azcontext).Tenant.id + "/servicePrincipals/" + $servicePrincipal.objectid + "?api-version=1.6"
 $body = @{
     passwordCredentials = @(
         @{
@@ -120,14 +128,14 @@ $postBody = $body | ConvertTo-Json -Depth 6
 Invoke-RestMethod -Uri $url -Method PATCH -Body $postBody -Headers $script:graphWindowsToken
 
 
-$vm = Get-AzVM -name "BPS-ADC-01" -ResourceGroupName "RG_BPS_WE_P_ActiveDirectory"
+$vm = Get-AzVM -name "vm-rz-dc001" -ResourceGroupName "rg-roz-avd-01"
 $output = $vm | invoke-azvmruncommand -CommandId 'RunPowerShellScript' -ScriptPath 'local-domaininfo.ps1'
 $domainGuid = ($output.Value[0].Message -replace '(?<!:.*):', '=' | ConvertFrom-StringData).domainGuid
 $domainName = ($output.Value[0].Message -replace '(?<!:.*):', '=' | ConvertFrom-StringData).domainName
 $domainSid = ($output.Value[0].Message -replace '(?<!:.*):', '=' | ConvertFrom-StringData).domainSid
 $forestName = ($output.Value[0].Message -replace '(?<!:.*):', '=' | ConvertFrom-StringData).forestName
 $netBiosDomainName = ($output.Value[0].Message -replace '(?<!:.*):', '=' | ConvertFrom-StringData).netBiosDomainName
-$azureStorageSid = ($output.Value[0].Message -replace '(?<!:.*):', '=' | ConvertFrom-StringData).azureStorageSid
+$azureStorageSid = $domainSid + "-123454321"
 
 $body = @{
     properties = @{
@@ -153,8 +161,8 @@ Invoke-RestMethod -Uri $Uri -ContentType 'application/json' -Method PATCH -Heade
 
 # Testing
 $generalParameters = @{
-    ResourceGroupName = "RG_BPS_WE_AVD_MU"
-    vmName            = "AAD-VM-0"
+    ResourceGroupName = "rg-roz-avd-01"
+    vmName            = "AAD-avd-0"
     Name              = "FSLogixTest"
 }
 $extensionParameters = @{
@@ -166,3 +174,6 @@ $extensionParameters = @{
 Set-AzVMCustomScriptExtension @generalParameters @extensionParameters
 
 Get-AzVMExtension @generalParameters | Remove-AzVMExtension -Force
+
+
+($storageAccount  | get-azstorageaccount).AzureFilesIdentityBasedAuth.ActiveDirectoryProperties |FL
