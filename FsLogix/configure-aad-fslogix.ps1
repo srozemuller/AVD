@@ -1,3 +1,4 @@
+
 $resourceGroupName = "RG-ROZ-STOR-01"
 $location = "WestEurope"
 
@@ -72,21 +73,7 @@ $servicePrincipalNames.Add('CIFS/{0}.file.core.windows.net' -f $storageAccount.S
 $servicePrincipalNames.Add('HOST/{0}.file.core.windows.net' -f $storageAccount.StorageAccountName) | Out-Null
 
 
-
 $url = $script:graphWindowsUrl + "/" + $(get-azcontext).Tenant.Id + "/applications?api-version=1.6"
-$body = @{
-    displayName           = $storageAccount.StorageAccountName
-    identifierUris        = $servicePrincipalNames
-    GroupMembershipClaims = "All"
-}
-$postBody = $body | ConvertTo-Json -Depth 4
-$application = Invoke-RestMethod -Uri $url -Method POST -Body $postBody -Headers $script:graphWindowsToken -UseBasicParsing
-
-$servicePrincipalNames = New-Object string[] 3
-$servicePrincipalNames[0] = 'HTTP/{0}.file.core.windows.net' -f $storageAccount.StorageAccountName
-$servicePrincipalNames[1] = 'CIFS/{0}.file.core.windows.net' -f $storageAccount.StorageAccountName
-$servicePrincipalNames[2] = 'HOST/{0}.file.core.windows.net' -f $storageAccount.StorageAccountName
-
 # assign permissions
 $permissions = @{
     resourceAppId  = "00000003-0000-0000-c000-000000000000"
@@ -105,19 +92,47 @@ $permissions = @{
         }
     )
 }
-(Invoke-RestMethod -method GET -headers $script:graphApiToken -uri "$($script:mainUrl)/applications/$($application.objectid)").requiredResourceAccess.resourceAccess
-Add-ApplicationPermissions -AppId $application.ObjectId -permissions $permissions 
 
-# Create SP
-$newSp = New-SPFromApp -AppId $application.appId  -ServicePrincipalType "Application"
+$body = @{
+    displayName            = $storageAccount.StorageAccountName
+    GroupMembershipClaims  = "All"
+    identifierUris         = $servicePrincipalNames
+    requiredResourceAccess = @(
+        $permissions
+    ) 
+}
+$postBody = $body | ConvertTo-Json -Depth 4
+$application = Invoke-RestMethod -Uri $url -Method POST -Body $postBody -Headers $script:graphWindowsToken -UseBasicParsing
+
+$url = $Script:GraphApiUrl + "/Beta/servicePrincipals"
+$body = @{
+    appId                = $application.appId
+    ServicePrincipalType = "Application"
+}
+$postBody = $body | ConvertTo-Json
+$newSp = Invoke-RestMethod -Uri $url -Method POST -Body $postBody -Headers $script:graphApiToken
 ### 059f3e1f-c67d-4d58-a1f9-d58cfe8a49e3 is per tenant verschillend (kan)
 $graphAggregatorServiceObjectId = "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70"
+$date = Get-Date
+$url = $($Script:GraphApiUrl) + "/Beta/oauth2PermissionGrants"
+$body = @{
+    clientId    = $newSp.id
+    consentType = "AllPrincipals"
+    principalId = $null
+    resourceId  = $graphAggregatorServiceObjectId
+    scope       = "openid User.Read profile"
+    startTime   = $date
+    expiryTime  = $date
+}
+$postBody = $body | ConvertTo-Json
+Invoke-RestMethod -Uri $url -Method POST -Body $postBody -Headers $script:graphApiToken
+
 Consent-ApplicationPermissions -ServicePrincipalId $newSp.id  -ResourceId $graphAggregatorServiceObjectId -Scope "open.id user.read profile"
 
 $keyName = "kerb1"
 $storageAccount | New-AzStorageAccountKey -KeyName $keyName -ErrorAction Stop 
 # Assign password to service principal
-$kerbKey1 =  $storageAccount | Get-AzStorageAccountKey -ListKerbKey | Where-Object { $_.KeyName -eq $keyName }
+$kerbKey1 = $storageAccount | Get-AzStorageAccountKey -ListKerbKey | Where-Object { $_.KeyName -eq $keyName }
 $aadPasswordBuffer = [System.Linq.Enumerable]::Take([System.Convert]::FromBase64String($kerbKey1.Value), 32);
 $password = "kk:" + [System.Convert]::ToBase64String($aadPasswordBuffer);
 $url = "https://graph.windows.net/" + $(get-azcontext).Tenant.id + "/servicePrincipals/" + $newSp.id + "?api-version=1.6"
@@ -174,7 +189,7 @@ $generalParameters = @{
 $extensionParameters = @{
     Location   = 'westeurope'
     FileUri    = "https://raw.githubusercontent.com/srozemuller/AVD/main/FsLogix/test-fslogix-deployment.ps1"
-    Run = 'test-fslogix-deployment.ps1'
+    Run        = 'test-fslogix-deployment.ps1'
     ForceReRun = $true
 }
 Set-AzVMCustomScriptExtension @generalParameters @extensionParameters
@@ -182,4 +197,4 @@ Set-AzVMCustomScriptExtension @generalParameters @extensionParameters
 Get-AzVMExtension @generalParameters | Remove-AzVMExtension -Force
 
 
-($storageAccount  | get-azstorageaccount).AzureFilesIdentityBasedAuth.ActiveDirectoryProperties |FL
+($storageAccount  | get-azstorageaccount).AzureFilesIdentityBasedAuth.ActiveDirectoryProperties | FL

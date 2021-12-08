@@ -1,7 +1,6 @@
 parameters:
   serviceConnection: ''
   taskName: ''
-  subscriptionId: ''
   parameterFile: ''
   VirtualMachineName: ''
   imageVersionName: ''
@@ -30,7 +29,6 @@ jobs:
       azureSubscription: ${{ parameters.serviceConnection }}
       ScriptType: 'InlineScript'
       Inline: |
-          Set-AzContext -Subscription ${{ parameters.subscriptionId }}
           $fileParameters = (Get-Content ${{ parameters.parameterFile }} | ConvertFrom-Json).parameters
           $deployParameters = @{
             ResourceGroup = "rg-${{ parameters.VirtualMachineName }}"
