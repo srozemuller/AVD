@@ -1,7 +1,3 @@
-
-$resourceGroupName = "RG-ROZ-STOR-01"
-$location = "WestEurope"
-
 $script:AzureUrl = "https://management.azure.com/"
 $script:AzureToken = GetAuthToken -resource $script:AzureUrl
 
@@ -10,6 +6,11 @@ $script:graphWindowsToken = GetAuthToken -resource $script:graphWindowsUrl
 
 $Script:GraphApiUrl = "https://graph.microsoft.com"
 $script:graphApiToken = GetAuthToken -resource $Script:GraphApiUrl 
+
+
+$resourceGroupName = "RG-ROZ-STOR-01"
+$location = "WestEurope"
+
 $rgParameters = @{
     resourceGroupName = $resourceGroupName
     location          = $location 
@@ -32,9 +33,24 @@ $saShareParameters = @{
 $saShare = $storageAccount | New-AzRmStorageShare @saShareParameters
 $saShare
 
+$guid = (new-guid).guid
+$smbShareContributorRoleId = "0c867c2a-1d8c-454a-a3db-ab2ea1bdc8bb"
+$roleDefinitionId = "/subscriptions/" + $(get-azcontext).Subscription.id + "/providers/Microsoft.Authorization/roleDefinitions/" + $smbShareContributorRoleId
+$roleUrl = $script:AzureUrl + $storageAccount.id + "/providers/Microsoft.Authorization/roleAssignments/$($guid)?api-version=2018-07-01"
+$roleBody = @{
+    properties = @{
+        roleDefinitionId = $roleDefinitionId
+        principalId      = "f119eef3-fee6-44c6-a692-4d761eccaf7e" # AD Group ID
+        scope            = $storageAccount.id
+    }
+}
+$jsonRoleBody = $roleBody | ConvertTo-Json -Depth 6
+Invoke-RestMethod -Uri $roleUrl -Method PUT -Body $jsonRoleBody -headers $script:AzureToken
+
+
 # Kerberos enable
 $Uri = $script:AzureUrl + $storageAccount.id + "?api-version=2021-04-01"
-$json = 
+$kerbBody = 
 @{
     properties = @{
         azureFilesIdentityBasedAuthentication = @{
@@ -42,37 +58,22 @@ $json =
         }
     }
 }
-$json = $json | ConvertTo-Json -Depth 99
+$kerbJsonBody = $kerbBody | ConvertTo-Json -Depth 99
 try {
-    Invoke-RestMethod -Uri $Uri -ContentType 'application/json' -Method PATCH -Headers $script:AzureToken -Body $json;
+    Invoke-RestMethod -Uri $Uri -ContentType 'application/json' -Method PATCH -Headers $script:AzureToken -Body $kerbJsonBody;
 }
 catch {
     Write-Host $_.Exception.ToString()
     Write-Error -Message "Caught exception setting Storage Account directoryServiceOptions=AADKERB: $_" -ErrorAction Stop
 } 
 
-$guid = (new-guid).guid
-$smbShareContributorRoleId = "0c867c2a-1d8c-454a-a3db-ab2ea1bdc8bb"
-$roleDefinitionId = "/subscriptions/" + $(get-azcontext).Subscription.id + "/providers/Microsoft.Authorization/roleDefinitions/" + $smbShareContributorRoleId
-$url = $script:AzureUrl + $storageAccount.id + "/providers/Microsoft.Authorization/roleAssignments/$($guid)?api-version=2018-07-01"
-$body = @{
-    properties = @{
-        roleDefinitionId = $roleDefinitionId
-        principalId      = "f119eef3-fee6-44c6-a692-4d761eccaf7e" # AD Group ID
-        scope            = $storageAccount.id
-    }
-}
-$jsonBody = $body | ConvertTo-Json -Depth 6
-Invoke-RestMethod -Uri $url -Method PUT -Body $jsonBody -headers $script:AzureToken
 
 
 # Create app registration
-$servicePrincipalNames = [System.Collections.Arraylist]::New()
-$servicePrincipalNames.Add('HTTP/{0}.file.core.windows.net' -f $storageAccount.StorageAccountName) | Out-Null
-$servicePrincipalNames.Add('CIFS/{0}.file.core.windows.net' -f $storageAccount.StorageAccountName) | Out-Null
-$servicePrincipalNames.Add('HOST/{0}.file.core.windows.net' -f $storageAccount.StorageAccountName) | Out-Null
-
-
+$identifierURIs = [System.Collections.Arraylist]::New()
+$identifierURIs.Add('HTTP/{0}.file.core.windows.net' -f $storageAccount.StorageAccountName) | Out-Null
+$identifierURIs.Add('CIFS/{0}.file.core.windows.net' -f $storageAccount.StorageAccountName) | Out-Null
+$identifierURIs.Add('HOST/{0}.file.core.windows.net' -f $storageAccount.StorageAccountName) | Out-Null
 $url = $script:graphWindowsUrl + "/" + $(get-azcontext).Tenant.Id + "/applications?api-version=1.6"
 # assign permissions
 $permissions = @{
@@ -96,7 +97,7 @@ $permissions = @{
 $body = @{
     displayName            = $storageAccount.StorageAccountName
     GroupMembershipClaims  = "All"
-    identifierUris         = $servicePrincipalNames
+    identifierUris         = $identifierURIs
     requiredResourceAccess = @(
         $permissions
     ) 
@@ -111,8 +112,10 @@ $body = @{
 }
 $postBody = $body | ConvertTo-Json
 $newSp = Invoke-RestMethod -Uri $url -Method POST -Body $postBody -Headers $script:graphApiToken
-### 059f3e1f-c67d-4d58-a1f9-d58cfe8a49e3 is per tenant verschillend (kan)
-$graphAggregatorServiceObjectId = "3f73b7e5-80b4-4ca8-9a77-8811bb27eb70"
+
+
+$url = $Script:GraphApiUrl + "/Beta/servicePrincipals?`$filter=appId eq '00000003-0000-0000-c000-000000000000'"
+$graphAggregatorServiceObjectId = (Invoke-RestMethod -Uri $url -Headers $script:graphApiToken).Value.id
 $date = Get-Date
 $url = $($Script:GraphApiUrl) + "/Beta/oauth2PermissionGrants"
 $body = @{
@@ -127,7 +130,6 @@ $body = @{
 $postBody = $body | ConvertTo-Json
 Invoke-RestMethod -Uri $url -Method POST -Body $postBody -Headers $script:graphApiToken
 
-Consent-ApplicationPermissions -ServicePrincipalId $newSp.id  -ResourceId $graphAggregatorServiceObjectId -Scope "open.id user.read profile"
 
 $keyName = "kerb1"
 $storageAccount | New-AzStorageAccountKey -KeyName $keyName -ErrorAction Stop 
@@ -135,6 +137,7 @@ $storageAccount | New-AzStorageAccountKey -KeyName $keyName -ErrorAction Stop
 $kerbKey1 = $storageAccount | Get-AzStorageAccountKey -ListKerbKey | Where-Object { $_.KeyName -eq $keyName }
 $aadPasswordBuffer = [System.Linq.Enumerable]::Take([System.Convert]::FromBase64String($kerbKey1.Value), 32);
 $password = "kk:" + [System.Convert]::ToBase64String($aadPasswordBuffer);
+
 $url = "https://graph.windows.net/" + $(get-azcontext).Tenant.id + "/servicePrincipals/" + $newSp.id + "?api-version=1.6"
 $body = @{
     passwordCredentials = @(
@@ -180,16 +183,19 @@ Invoke-RestMethod -Uri $Uri -ContentType 'application/json' -Method PATCH -Heade
 
 
 
-# Testing
+# Configuring FSLogix
+$profileLocation = "\\$($storageAccount.StorageAccountName).file.core.windows.net\profiles"
+$officeLocation = "\\$($storageAccount.StorageAccountName).file.core.windows.net\$($saShare.Name)"
 $generalParameters = @{
-    ResourceGroupName = "rg-roz-avd-01"
-    vmName            = "AAD-avd-0"
-    Name              = "FSLogixTest"
+    ResourceGroupName = "RG_BPS_WE_AVD_MU"
+    vmName            = "AAD-VM-0"
+    Name              = "Configure.FSLogix"
 }
 $extensionParameters = @{
     Location   = 'westeurope'
-    FileUri    = "https://raw.githubusercontent.com/srozemuller/AVD/main/FsLogix/test-fslogix-deployment.ps1"
-    Run        = 'test-fslogix-deployment.ps1'
+    FileUri    = "https://raw.githubusercontent.com/srozemuller/AVD/main/FsLogix/deploy-fslogix-config.ps1"
+    Run        = 'deploy-fslogix-config.ps1'
+    Argument   = "-profileLocation $profileLocation -officeLocation $officeLocation "
     ForceReRun = $true
 }
 Set-AzVMCustomScriptExtension @generalParameters @extensionParameters
