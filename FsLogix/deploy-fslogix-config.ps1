@@ -38,7 +38,12 @@ try {
         New-ItemProperty -Path $fslogixPath -Name DeleteLocalProfileWhenVHDShouldApply -Value 1 -PropertyType DWORD -Force | Out-Null
         Write-Information "Configuring fslogix profile location"
     }
+}
+catch {
+    Throw "Configuring FSLogix profile location not succesfully, $_"
+}
 
+try {
     if ($officeLocation) {
         # FSlogix Office container
         Write-Information "Configuring fslogix profile location"
@@ -47,10 +52,12 @@ try {
             New-Item -Path $fslogixOfficePath -Force | Out-Null
         }
         New-ItemProperty -Path $fslogixOfficePath -Name Enabled -Value 1 -PropertyType DWORD -Force | Out-Null
-        New-ItemProperty -Path $fslogixOfficePath -Name VHDLocations -Value $profileLocation -PropertyType String -Force | Out-Null
+        New-ItemProperty -Path $fslogixOfficePath -Name VHDLocations -Value $officeLocation -PropertyType String -Force | Out-Null
         New-ItemProperty -Path $fslogixOfficePath -Name DeleteLocalProfileWhenVHDShouldApply -Value 1 -PropertyType DWORD -Force | Out-Null
     }
+    
 }
 catch {
-    Throw "configuring FSLogix not succesful, $_"
+    Throw "Configuring FSLogix office location not succesfully, $_"
 }
+
