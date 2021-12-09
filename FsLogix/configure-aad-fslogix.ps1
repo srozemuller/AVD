@@ -25,7 +25,7 @@ $storageAccount = $resourceGroup | New-AzStorageAccount @storageAccountParameter
 $storageAccount 
 
 $saShareParameters = @{
-    Name       = "profiles2"
+    Name       = "profiles"
     AccessTier = "Premium"
     QuotaGiB   = 1024
 }
