@@ -26,7 +26,7 @@ $storageAccount = $resourceGroup | New-AzStorageAccount @storageAccountParameter
 $storageAccount 
 
 $saShareParameters = @{
-    Name       = "profiles"
+    Name       = "office"
     AccessTier = "Premium"
     QuotaGiB   = 1024
 }
@@ -185,10 +185,10 @@ Invoke-RestMethod -Uri $Uri -ContentType 'application/json' -Method PATCH -Heade
 
 # Configuring FSLogix
 $profileLocation = "\\$($storageAccount.StorageAccountName).file.core.windows.net\profiles"
-$officeLocation = "\\$($storageAccount.StorageAccountName).file.core.windows.net\$($saShare.Name)"
+$officeLocation = "\\$($storageAccount.StorageAccountName).file.core.windows.net\office"
 $generalParameters = @{
-    ResourceGroupName = "RG_BPS_WE_AVD_MU"
-    vmName            = "AAD-VM-0"
+    ResourceGroupName = "RG-roz-avd-01"
+    vmName            = "AAD-avd-0"
     Name              = "Configure.FSLogix"
 }
 $extensionParameters = @{
@@ -198,7 +198,7 @@ $extensionParameters = @{
     Argument   = "-profileLocation $profileLocation -officeLocation $officeLocation "
     ForceReRun = $true
 }
-Set-AzVMCustomScriptExtension @generalParameters @extensionParameters
+$extension = Set-AzVMCustomScriptExtension @generalParameters @extensionParameters
 
 Get-AzVMExtension @generalParameters | Remove-AzVMExtension -Force
 
