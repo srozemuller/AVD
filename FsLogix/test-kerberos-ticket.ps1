@@ -2,7 +2,8 @@ try {
     Write-Information "Getting Kerberos Ticket Granting Ticket from Micrsoft Online"
     cmd /c "klist purge"
     $output = cmd.exe /c klist get krbtgt
-    if ($output | Select-String -Pattern 'Server: krbtgt/KERBEROS.MICROSOFTONLINE.COM @ KERBEROS.MICROSOFTONLINE.COM' -CaseSensitive -SimpleMatch) { 
+    $output
+    if ($output | Select-String -Pattern "Server: krbtgt/KERBEROS.MICROSOFTONLINE.COM @ KERBEROS.MICROSOFTONLINE.COM" -CaseSensitive -SimpleMatch) { 
         Write-Host "Got ticket from KERBEROS.MICROSOFTONLINE.COM" 
     }
     else {
