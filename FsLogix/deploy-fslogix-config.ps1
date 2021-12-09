@@ -38,8 +38,8 @@ try {
         # FSlogix Office container
         Write-Information "Configuring fslogix profile location"
         $fslogixOfficePath = "HKLM:\Software\FSLogix\ODFS"
-        if (!(Test-Path $registryPath)) {
-            New-Item -Path $fslogixPath -Force | Out-Null
+        if (!(Test-Path $fslogixOfficePath)) {
+            New-Item -Path $fslogixOfficePath -Force | Out-Null
         }
         New-ItemProperty -Path $fslogixOfficePath -Name Enabled -Value 1 -PropertyType DWORD -Force | Out-Null
         New-ItemProperty -Path $fslogixOfficePath -Name VHDLocations -Value $profileLocation -PropertyType String -Force | Out-Null
