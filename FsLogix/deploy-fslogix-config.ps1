@@ -8,13 +8,18 @@ param (
 )
 try {
     Write-Information "Enabling Kerberos functions"
-    $registryPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters"
-    $name = "CloudKerberosTicketRetrievalEnabled"
-    $value = 1
-    if (!(Test-Path $registryPath)) {
-        New-Item -Path $registryPath -Force | Out-Null
+    $kerberosPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters"
+    if (!(Test-Path $kerberosPath)) {
+        New-Item -Path $kerberosPath -Force | Out-Null
     }
-    New-ItemProperty -Path $registryPath -Name $name -Value $value -PropertyType DWORD -Force | Out-Null
+    New-ItemProperty -Path $kerberosPath -Name "CloudKerberosTicketRetrievalEnabled" -Value 1 -PropertyType DWORD -Force | Out-Null
+
+    $aadAccountPath = "HKLM:\Software\Policies\Microsoft\AzureADAccount"
+    if (!(Test-Path $aadAccountPath)) {
+        New-Item -Path $aadAccountPath -Force | Out-Null
+    }
+    New-ItemProperty -Path $aadAccountPath -Name "LoadCredKeyFromProfile" -Value 1 -PropertyType DWORD -Force | Out-Null
+
     Write-Information "Resetting Primary Refresh Token"
     cmd /c "dsregcmd /RefreshPrt"
 }   
