@@ -8,7 +8,7 @@ param (
 )
 try {
     Write-Information "Enabling Kerberos functions"
-    $registryPath = "HKCU:\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters"
+    $registryPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters"
     $name = "CloudKerberosTicketRetrievalEnabled"
     $value = 1
     if (!(Test-Path $registryPath)) {
@@ -24,7 +24,7 @@ catch {
 try {
     if ($profileLocation) {
         # Fslogix profile container
-        $fslogixPath = "HKCU:\Software\FSLogix\Profiles"
+        $fslogixPath = "HKLM:\Software\FSLogix\Profiles"
         if (!(Test-Path $registryPath)) {
             New-Item -Path $fslogixPath -Force | Out-Null
         }
@@ -37,7 +37,7 @@ try {
     if ($officeLocation) {
         # FSlogix Office container
         Write-Information "Configuring fslogix profile location"
-        $fslogixOfficePath = "HKCU:\Software\FSLogix\ODFS"
+        $fslogixOfficePath = "HKLM:\Software\FSLogix\ODFS"
         if (!(Test-Path $registryPath)) {
             New-Item -Path $fslogixPath -Force | Out-Null
         }
