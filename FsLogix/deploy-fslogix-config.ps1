@@ -8,7 +8,14 @@ param (
 )
 try {
     Write-Information "Enabling Kerberos functions"
-    cmd /c "reg add HKLM\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters /v CloudKerberosTicketRetrievalEnabled /t REG_DWORD /d 1"
+    $registryPath = "HKCU:\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters"
+    $name = "CloudKerberosTicketRetrievalEnabled"
+    $value = 1
+    if (!(Test-Path $registryPath)) {
+        New-Item -Path $registryPath -Force | Out-Null
+    }
+    New-ItemProperty -Path $registryPath -Name $name -Value $value -PropertyType DWORD -Force | Out-Null
+    Write-Information "Resetting Primary Refresh Token"
     cmd /c "dsregcmd /RefreshPrt"
 }   
 catch {
@@ -17,21 +24,28 @@ catch {
 try {
     if ($profileLocation) {
         # Fslogix profile container
+        $fslogixPath = "HKCU:\Software\FSLogix\Profiles"
+        if (!(Test-Path $registryPath)) {
+            New-Item -Path $fslogixPath -Force | Out-Null
+        }
+        New-ItemProperty -Path $fslogixPath -Name Enabled -Value 1 -PropertyType DWORD -Force | Out-Null
+        New-ItemProperty -Path $fslogixPath -Name VHDLocations -Value $profileLocation -PropertyType String -Force | Out-Null
+        New-ItemProperty -Path $fslogixPath -Name DeleteLocalProfileWhenVHDShouldApply -Value 1 -PropertyType DWORD -Force | Out-Null
         Write-Information "Configuring fslogix profile location"
-        cmd /c "reg add HKLM\Software\FSLogix\Profiles /v Enabled /t REG_DWORD /d 1"
-        cmd /c "reg add HKLM\Software\FSLogix\Profiles /v VHDLocations /t REG_SZ /d $profileLocation"
-        cmd /c "reg add HKLM\Software\FSLogix\Profiles /v DeleteLocalProfileWhenVHDShouldApply /t REG_DWORD /d 1"
     }
 
     if ($officeLocation) {
         # FSlogix Office container
         Write-Information "Configuring fslogix profile location"
-        cmd /c "reg add HKLM\Software\FSLogix\ODFC /v Enabled /t REG_DWORD /d 1"
-        cmd /c "reg add HKLM\Software\FSLogix\ODFC /v VHDLocations /t REG_SZ /d $officeLocation"
-        cmd /c "reg add HKLM\Software\FSLogix\ODFC /v DeleteLocalProfileWhenVHDShouldApply /t REG_DWORD /d 1"
+        $fslogixOfficePath = "HKCU:\Software\FSLogix\ODFS"
+        if (!(Test-Path $registryPath)) {
+            New-Item -Path $fslogixPath -Force | Out-Null
+        }
+        New-ItemProperty -Path $fslogixOfficePath -Name Enabled -Value 1 -PropertyType DWORD -Force | Out-Null
+        New-ItemProperty -Path $fslogixOfficePath -Name VHDLocations -Value $profileLocation -PropertyType String -Force | Out-Null
+        New-ItemProperty -Path $fslogixOfficePath -Name DeleteLocalProfileWhenVHDShouldApply -Value 1 -PropertyType DWORD -Force | Out-Null
     }
 }
 catch {
     Throw "configuring FSLogix not succesful, $_"
 }
-
