@@ -30,7 +30,7 @@ try {
     if ($profileLocation) {
         # Fslogix profile container
         $fslogixPath = "HKLM:\Software\FSLogix\Profiles"
-        if (!(Test-Path $registryPath)) {
+        if (!(Test-Path $fslogixPath)) {
             New-Item -Path $fslogixPath -Force | Out-Null
         }
         New-ItemProperty -Path $fslogixPath -Name Enabled -Value 1 -PropertyType DWORD -Force | Out-Null
