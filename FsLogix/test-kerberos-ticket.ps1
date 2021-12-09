@@ -3,13 +3,13 @@ try {
     cmd /c "klist purge"
     $output = cmd.exe /c klist get krbtgt
     if ($output | Select-String -Pattern 'Server: krbtgt/KERBEROS.MICROSOFTONLINE.COM @ KERBEROS.MICROSOFTONLINE.COM' -CaseSensitive -SimpleMatch) { 
-        "Got ticket from KERBEROS.MICROSOFTONLINE.COM" 
+        Write-Host "Got ticket from KERBEROS.MICROSOFTONLINE.COM" 
     }
     else {
         Throw "No ticket found from KERBEROS.MICROSOFTONLINE.COM"
     }
 }   
 catch {
-    Throw "Kerberos "
+    Throw "Kerberos check failed, $_"
 }
 
