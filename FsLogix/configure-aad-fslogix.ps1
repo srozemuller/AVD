@@ -189,13 +189,13 @@ $officeLocation = "\\$($storageAccount.StorageAccountName).file.core.windows.net
 $generalParameters = @{
     ResourceGroupName = "RG-roz-avd-01"
     vmName            = "AAD-avd-0"
-    Name              = "Configure.FSLogix"
+    Name              = "Test.Kerberos"
 }
 $extensionParameters = @{
     Location   = 'westeurope'
-    FileUri    = "https://raw.githubusercontent.com/srozemuller/AVD/main/FsLogix/deploy-fslogix-config.ps1"
-    Run        = 'deploy-fslogix-config.ps1'
-    Argument   = "-profileLocation $profileLocation -officeLocation $officeLocation "
+    FileUri    = "https://raw.githubusercontent.com/srozemuller/AVD/main/FsLogix/test-kerberos-ticket.ps1"
+    Run        = 'test-kerberos-ticket.ps1'
+    #Argument   = "-profileLocation $profileLocation -officeLocation $officeLocation "
     ForceReRun = $true
 }
 $extension = Set-AzVMCustomScriptExtension @generalParameters @extensionParameters
