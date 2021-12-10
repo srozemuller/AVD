@@ -55,9 +55,9 @@ try {
         New-ItemProperty -Path $fslogixOfficePath -Name VHDLocations -Value $officeLocation -PropertyType String -Force | Out-Null
         New-ItemProperty -Path $fslogixOfficePath -Name DeleteLocalProfileWhenVHDShouldApply -Value 1 -PropertyType DWORD -Force | Out-Null
     }
-    
 }
 catch {
     Throw "Configuring FSLogix office location not succesfully, $_"
 }
 
+Restart-Computer -ComputerName $env:COMPUTERNAME
