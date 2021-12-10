@@ -22,6 +22,3 @@ try {
 catch {
     Throw "Kerberos check failed, $_"
 }
-
-$credentials = New-Object System.Management.Automation.PSCredential -ArgumentList @('s_op@rozemuller.com',(ConvertTo-SecureString -String "XcV_UGpXsMP3B:" -AsPlainText -Force))
-
