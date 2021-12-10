@@ -1,8 +1,17 @@
+[CmdletBinding()]
+param (
+    [Parameter()]
+    [ValidateNotNull()]
+    [System.Management.Automation.PSCredential]
+    [System.Management.Automation.Credential()]
+    $Credentials
+)
 try {
     Write-Information "Getting Kerberos Ticket Granting Ticket from Micrsoft Online"
-    cmd /c "klist purge"
-    $output = cmd.exe /c klist get krbtgt
-    $output
+    #Invoke-Command -Credential $Credentials -ComputerName $env:COMPUTERNAME -ScriptBlock {cmd /c "klist purge"}
+    Start-Process "powershell" -ArgumentList "klist purge" -Credential $credentials
+    Start-Process "powershell" -ArgumentList "klist get krbtgt" -Credential $credentials -NoNewWindow -Wait -WorkingDirectory '.' -RedirectStandardOutput "output.txt"
+    $output = Get-Content ".\output.txt"
     if ($output | Select-String -Pattern "Server: krbtgt/KERBEROS.MICROSOFTONLINE.COM @ KERBEROS.MICROSOFTONLINE.COM" -CaseSensitive -SimpleMatch) { 
         Write-Host "Got ticket from KERBEROS.MICROSOFTONLINE.COM" 
     }
@@ -13,4 +22,6 @@ try {
 catch {
     Throw "Kerberos check failed, $_"
 }
+
+$credentials = New-Object System.Management.Automation.PSCredential -ArgumentList @('s_op@rozemuller.com',(ConvertTo-SecureString -String "XcV_UGpXsMP3B:" -AsPlainText -Force))
 
