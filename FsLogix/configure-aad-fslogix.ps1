@@ -26,7 +26,7 @@ $storageAccount = $resourceGroup | New-AzStorageAccount @storageAccountParameter
 $storageAccount 
 
 $saShareParameters = @{
-    Name       = "profiles"
+    Name       = "office"
     AccessTier = "Premium"
     QuotaGiB   = 1024
 }
@@ -185,20 +185,20 @@ Invoke-RestMethod -Uri $Uri -ContentType 'application/json' -Method PATCH -Heade
 
 # Configuring FSLogix
 $profileLocation = "\\$($storageAccount.StorageAccountName).file.core.windows.net\profiles"
-$officeLocation = "\\$($storageAccount.StorageAccountName).file.core.windows.net\$($saShare.Name)"
+$officeLocation = "\\$($storageAccount.StorageAccountName).file.core.windows.net\office"
 $generalParameters = @{
-    ResourceGroupName = "RG_BPS_WE_AVD_MU"
-    vmName            = "AAD-VM-0"
-    Name              = "Configure.FSLogix"
+    ResourceGroupName = "RG-roz-avd-01"
+    vmName            = "AAD-avd-0"
+    Name              = "Test.Kerberos"
 }
 $extensionParameters = @{
     Location   = 'westeurope'
-    FileUri    = "https://raw.githubusercontent.com/srozemuller/AVD/main/FsLogix/deploy-fslogix-config.ps1"
-    Run        = 'deploy-fslogix-config.ps1'
-    Argument   = "-profileLocation $profileLocation -officeLocation $officeLocation "
+    FileUri    = "https://raw.githubusercontent.com/srozemuller/AVD/main/FsLogix/test-kerberos-ticket.ps1"
+    Run        = 'test-kerberos-ticket.ps1'
+    #Argument   = "-profileLocation $profileLocation -officeLocation $officeLocation "
     ForceReRun = $true
 }
-Set-AzVMCustomScriptExtension @generalParameters @extensionParameters
+$extension = Set-AzVMCustomScriptExtension @generalParameters @extensionParameters
 
 Get-AzVMExtension @generalParameters | Remove-AzVMExtension -Force
 
