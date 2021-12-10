@@ -9,8 +9,8 @@ param (
 try {
     Write-Information "Getting Kerberos Ticket Granting Ticket from Micrsoft Online"
     #Invoke-Command -Credential $Credentials -ComputerName $env:COMPUTERNAME -ScriptBlock {cmd /c "klist purge"}
-    Start-Process "powershell" -ArgumentList "klist purge" -Credential $credentials -NoNewWindow
-    Start-Process "powershell" -ArgumentList "klist get krbtgt" -Credential $credentials -NoNewWindow -WorkingDirectory '.' -RedirectStandardOutput "output.txt"
+    Start-Process "powershell" -ArgumentList "klist purge" -RunAs $credentials -NoNewWindow
+    Start-Process "powershell" -ArgumentList "klist get krbtgt" -RunAs $credentials -NoNewWindow -WorkingDirectory '.' -RedirectStandardOutput "output.txt"
     $output = Get-Content ".\output.txt"
     if ($output | Select-String -Pattern "Server: krbtgt/KERBEROS.MICROSOFTONLINE.COM @ KERBEROS.MICROSOFTONLINE.COM" -CaseSensitive -SimpleMatch) { 
         Write-Host "Got ticket from KERBEROS.MICROSOFTONLINE.COM" 
