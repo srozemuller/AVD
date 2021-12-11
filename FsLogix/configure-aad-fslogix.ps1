@@ -215,19 +215,19 @@ Get-AzVMExtension @generalParameters | Remove-AzVMExtension -Force
 Invoke-AzVMRunCommand -ResourceGroupName 'RG-roz-avd-01' -VMName "AAD-avd-1" -CommandId 'RunPowerShellScript' -ScriptPath ".\test-kerberos-ticket.ps1" -Parameter @{username = "Rozemuller\s_op2"; password = "#7W&:o#.!*)c3K" }
 
 
-Set-AzVMRunCommand -location westeurope -ResourceGroupName 'RG-roz-avd-01' -VMName "AAD-avd-1" -runcommandName "fdsdfs" -SourceScript "klist get krbtgt | Out-File c:\windows\temp\balbalba.txt" -runasuser "Rozemuller\s_op2" -runaspassword "#7W&:o#.!*)c3K"
+Set-AzVMRunCommand -location westeurope -ResourceGroupName 'RG-roz-avd-01' -VMName "AAD-avd-1" -runcommandName "test" -SourceScriptURI "https://github.com/srozemuller/AVD/blob/main/FsLogix/test-kerberos-ticket.ps1" -runasuser "Rozemuller\s_op2" -runaspassword "#7W&:o#.!*)c3K"
 
 
 ($storageAccount  | get-azstorageaccount).AzureFilesIdentityBasedAuth.ActiveDirectoryProperties | FL
 
 $vm = Get-azvm -name "AAD-avd-1" -ResourceGroupName 'RG-roz-avd-01'
-$url = $script:AzureUrl + $vm.id + "/runcommands/test?api-version=2019-12-01"
+$url = $script:AzureUrl + $vm.id + "/runcommands/withURL?api-version=2019-12-01"
 $token = GetAuthToken -resource $script:AzureUrl
 $body = @{
     location   = "WestEurope"
     properties = @{ 
         source           = @{ 
-            script = "Write-Host Hello World! | Out-File c:\windows\temp\output.txt"
+            scriptUri = "https://raw.githubusercontent.com/srozemuller/AVD/main/FsLogix/test-kerberos-ticket.ps1"#"Write-Host Hello World! | Out-File c:\windows\temp\output.txt"
         }
         runAsUser        = "Rozemuller\s_op2"
         runAsPassword    = "#7W&:o#.!*)c3K"
