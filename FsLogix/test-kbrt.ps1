@@ -13,7 +13,7 @@ param (
     Write-EventLog –LogName Application –Source "kbrt-test" –EntryType Information –EventID 1 –Message "This is start."
     if ((cmd.exe /c klist get krbtgt) -match 'Server: krbtgt/KERBEROS.MICROSOFTONLINE.COM @ KERBEROS.MICROSOFTONLINE.COM'){
         Write-Host "Good" | Out-File C:\Test\output.txt
-        Write-EventLog –LogName Application –Source “kbrt-test” –EntryType Information –EventID 1 –Message "This is a test message."
+        Write-EventLog –LogName Application –Source "kbrt-test" –EntryType Information –EventID 1 –Message "This is a test message."
     }
     else {
         "Not good" | Out-File C:\Windows\Temp\output.txt
