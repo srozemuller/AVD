@@ -1,12 +1,3 @@
-$script:AzureUrl = "https://management.azure.com/"
-$script:AzureToken = GetAuthToken -resource $script:AzureUrl
-
-$script:graphWindowsUrl = "https://graph.windows.net"
-$script:graphWindowsToken = GetAuthToken -resource $script:graphWindowsUrl
-
-$Script:GraphApiUrl = "https://graph.microsoft.com"
-$script:graphApiToken = GetAuthToken -resource $Script:GraphApiUrl 
-
 function GetAuthToken($resource) {
     $context = [Microsoft.Azure.Commands.Common.Authentication.Abstractions.AzureRmProfileProvider]::Instance.Profile.DefaultContext
     $Token = [Microsoft.Azure.Commands.Common.Authentication.AzureSession]::Instance.AuthenticationFactory.Authenticate($context.Account, $context.Environment, $context.Tenant.Id.ToString(), $null, [Microsoft.Azure.Commands.Common.Authentication.ShowDialog]::Never, $null, $resource).AccessToken
@@ -16,6 +7,15 @@ function GetAuthToken($resource) {
     }
     return $authHeader
 }
+
+$script:AzureUrl = "https://management.azure.com/"
+$script:AzureToken = GetAuthToken -resource $script:AzureUrl
+
+$script:graphWindowsUrl = "https://graph.windows.net"
+$script:graphWindowsToken = GetAuthToken -resource $script:graphWindowsUrl
+
+$Script:GraphApiUrl = "https://graph.microsoft.com"
+$script:graphApiToken = GetAuthToken -resource $Script:GraphApiUrl 
 
 $resourceGroupName = "RG-ROZ-STOR-01"
 $location = "WestEurope"
@@ -193,60 +193,35 @@ Invoke-RestMethod -Uri $Uri -ContentType 'application/json' -Method PATCH -Heade
 
 
 # Configuring FSLogix
-$profileLocation = "\\$($storageAccount.StorageAccountName).file.core.windows.net\profiles"
-$officeLocation = "\\$($storageAccount.StorageAccountName).file.core.windows.net\office"
+$profileLocation = "\\$($storageaccount.StorageAccountName).file.core.windows.net\profiles"
+$officeLocation = "\\$($storageaccount.StorageAccountName).file.core.windows.net\office"
 $generalParameters = @{
     ResourceGroupName = "RG-roz-avd-01"
-    vmName            = "AAD-avd-0"
-    Name              = "Test.Kerberos.TGT"
+    vmName            = "AAD-avd-2"
+    Name              = "deploy.fslogix"
 }
 $extensionParameters = @{
     Location       = 'westeurope'
-    FileUri        = "https://raw.githubusercontent.com/srozemuller/AVD/main/FsLogix/test-kerberos-ticket.ps1"
-    Run            = 'test-kerberos-ticket.ps1'
-    Argument       = "-profileLocation $profileLocation -officeLocation $officeLocation "
+    FileUri        = "https://raw.githubusercontent.com/srozemuller/AVD/main/FsLogix/deploy-fslogix-config.ps1"
+    Run            = 'deploy-fslogix-config.ps1'
+    Argument       = "-profileLocation $profileLocation -officeLocation $officeLocation"
     ForceReRun     = $true
-    DefaultProfile = (Get-AzContext)
 }
-$extension = Set-AzVMCustomScriptExtension @generalParameters @extensionParameters
+$fslogix = Set-AzVMCustomScriptExtension @generalParameters @extensionParameters
 
-Get-AzVMExtension @generalParameters | Remove-AzVMExtension -Force
-
-Invoke-AzVMRunCommand -ResourceGroupName 'RG-roz-avd-01' -VMName "AAD-avd-1" -CommandId 'RunPowerShellScript' -ScriptPath ".\test-kerberos-ticket.ps1" -Parameter @{username = "Rozemuller\s_op2"; password = "#7W&:o#.!*)c3K" }
-
-
-Set-AzVMRunCommand -location westeurope -ResourceGroupName 'RG-roz-avd-01' -VMName "AAD-avd-1" -runcommandName "test" -SourceScriptURI "https://github.com/srozemuller/AVD/blob/main/FsLogix/test-kerberos-ticket.ps1" -runasuser "Rozemuller\s_op2" -runaspassword "#7W&:o#.!*)c3K"
-
-
-($storageAccount  | get-azstorageaccount).AzureFilesIdentityBasedAuth.ActiveDirectoryProperties | FL
-
-$vm = Get-azvm -name "AAD-avd-1" -ResourceGroupName 'RG-roz-avd-01'
-$url = $script:AzureUrl + $vm.id + "/runcommands/withURL?api-version=2019-12-01"
-$token = GetAuthToken -resource $script:AzureUrl
-$body = @{
-    location   = "WestEurope"
-    properties = @{ 
-        source           = @{ 
-            scriptUri = "https://raw.githubusercontent.com/srozemuller/AVD/main/FsLogix/test-kerberos-ticket.ps1"#"Write-Host Hello World! | Out-File c:\windows\temp\output.txt"
-        }
-        runAsUser        = "Rozemuller\s_op2"
-        runAsPassword    = "#7W&:o#.!*)c3K"
-        timeoutInSeconds = 30
-    }
+$vm = Get-azvm -name "AAD-avd-2" -ResourceGroupName 'RG-roz-avd-01'
+$testParameters = @{
+    aadUserName = "AzureAD\userPrincipalName"
+    azureADUserPwd = "secretPassword"
+    psexecDownloadLocation = "https://download.sysinternals.com/files/PSTools.zip"
 }
-$jsonBody = $body | ConvertTo-Json -depth 3
-$params = @{
-    method  = "PUT"
-    headers = $token
-    uri     = $url
-    body    = $jsonbody
-}
-Invoke-RestMethod @params
+$testOutput = $vm | Invoke-AzVMRunCommand -CommandId 'RunPowerShellScript' -ScriptPath .\test-kbrt.ps1 -Parameter $testParameters
+$testOutput.Value[0].Message
 
-$url = $script:AzureUrl + $vm.id + "/runcommands/test?api-version=2019-12-01?`$expand=instanceView&api-version=2019-12-01" 
-$params = @{
-    method  = "GET"
-    headers = $token
-    uri     = $url
+$testOutput2 = $vm | Invoke-AzVMRunCommand -CommandId 'RunPowerShellScript' -ScriptPath .\test-kbrt.ps1 -Parameter $testParameters
+if ($testOutput2.Value[0].Message | Select-String -Pattern "Server: krbtgt/KERBEROS.MICROSOFTONLINE.COM @ KERBEROS.MICROSOFTONLINE.COM" -CaseSensitive -SimpleMatch){
+    Write-Output "Its OK!"
 }
-Invoke-RestMethod @params
+else {
+    Write-Warning "NOT OK!"
+}

@@ -1,12 +1,24 @@
 [CmdletBinding()]
 param (
     [Parameter()]
-    [string]$userName,
+    [string]$aadUserName,
     [Parameter()]
-    [string]$password
+    [string]$azureADUserPwd,
+    [Parameter()]
+    [string]$psexecDownloadLocation
 )
-
-$credentials = New-Object System.Management.Automation.PSCredential -ArgumentList @($username, (ConvertTo-SecureString -String $password -AsPlainText -Force))
-#New-EventLog -LogName Application -Source "kbrt-test"
-Write-EventLog -LogName Application -Source "kbrt-test" -EntryType Information -EventID 1 -Message "This is start., $credentials"
-C:\Test\PsExec.exe -h -u $userName -p $password /accepteula cmd /c "klist get krbtgt > c:\test\out2.txt"
+$downloadLocation = "C:\KerberosTest"
+$outputFile = (Join-Path -Path $downloadLocation -ChildPath 'kbrt.txt')
+if (-Not (Test-Path $downloadLocation)) {
+    Write-Host -ForegroundColor Green "Creating directory $downloadLocation"
+    New-Item -ItemType Directory -Force -Path $downloadLocation
+}
+Invoke-WebRequest -Uri $psexecDownloadLocation -OutFile (Join-Path -Path $downloadLocation -ChildPath 'psTools.zip')
+Expand-Archive -Path (Join-Path -Path $downloadLocation -ChildPath 'psTools.zip') -DestinationPath $downloadLocation -Force:$true
+Invoke-Expression ("$downloadLocation\PsExec.exe -h -i -u {0} -p {1} -accepteula powershell -noninteractive -command 'klist get krbtgt | Out-File -FilePath $outputFile'" -f $aadUserName, $azureADUserPwd)
+try {
+    Get-Content $outputFile
+}
+catch {
+    Throw "No content file found!, $_"
+}
