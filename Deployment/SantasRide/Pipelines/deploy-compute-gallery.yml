@@ -1,0 +1,69 @@
+parameters:
+  serviceConnection: ''
+  subscriptionId: ''
+  jobName: ''
+  taskName: ''
+  galleryName: ''
+  galleryDescription: ''
+  galleryResourceGroup: ''
+  galleryLocation: ''
+  definitionName: ''
+  publisher: ''
+  offer: ''
+  sku: ''
+  osState: ''
+  osTyp: ''
+  hyperVGeneration: ''
+
+
+jobs:
+- job: ${{ parameters.jobName }}
+  steps:
+  - task: DownloadPipelineArtifact@2
+    inputs:
+      buildType: 'current'
+      targetPath: '$(Pipeline.Workspace)'
+  - script: dir $(Pipeline.Workspace)/drop
+  - task: AzurePowerShell@5
+    name: ${{ parameters.taskName }}
+    enabled: true
+    inputs:
+      azureSubscription: ${{ parameters.serviceConnection }}
+      ScriptType: 'InlineScript'
+      Inline: |
+        Set-AzContext -Subscription ${{ parameters.subscriptionId }}
+        $galleryParameters = @{
+            Name = "${{ parameters.galleryName }}"
+            Description = "${{ parameters.galleryDescription }}"
+            ResourceGroupName = "${{ parameters.galleryResourceGroup }}"
+            Location = "${{ parameters.galleryLocation }}"
+        }
+        $gallery = New-AzGallery @galleryParameters
+        Write-Host "##vso[task.setvariable variable=galleryName;isOutput=true;issecret=false]$($gallery.name)"
+        Write-Host "##vso[task.setvariable variable=galleryLocation;isOutput=true;issecret=false]$($gallery.location)"
+        Write-Host "##vso[task.setvariable variable=galleryId;isOutput=true;issecret=false]$($gallery.id)"
+      azurePowerShellVersion: 'LatestVersion'
+  - task: AzurePowerShell@5
+    name: deployDefinition
+    enabled: true
+    inputs:
+      azureSubscription: ${{ parameters.serviceConnection }}
+      ScriptType: 'InlineScript'
+      Inline: |
+        Set-AzContext -Subscription ${{ parameters.subscriptionId }}
+        $imageDefinitionParameters = @{
+            GalleryName = "${{ parameters.galleryName }}"
+            ResourceGroupName = "${{ parameters.galleryResourceGroup }}"
+            Name = "${{ parameters.definitionName }}"
+            Location = "${{ parameters.galleryLocation }}"
+            Publisher = "${{ parameters.publisher }}"
+            Offer = "${{ parameters.offer }}"
+            Sku = "${{ parameters.sku }}"
+            osState = "${{ parameters.osState }}"
+            osType = "${{ parameters.osType }}"
+            hyperVGeneration = "${{ parameters.hyperVGeneration }}"
+        }
+        $imageDefinition = New-AzGalleryImageDefinition @imageDefinitionParameters
+        Write-Host "##vso[task.setvariable variable=definitionId;isOutput=true;issecret=false]$($imageDefinition.id)"
+        Write-Host "##vso[task.setvariable variable=definitionName;isOutput=true;issecret=false]$($imageDefinition.name)"
+      azurePowerShellVersion: 'LatestVersion'

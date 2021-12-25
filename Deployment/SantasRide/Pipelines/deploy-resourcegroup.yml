@@ -1,0 +1,31 @@
+parameters:
+  serviceConnection: ''
+  subscriptionId: ''
+  taskName: ''
+  name: ''
+  location: ''
+
+
+jobs:
+- job: DeployResourceGroup
+  steps:
+  - task: DownloadPipelineArtifact@2
+    inputs:
+      buildType: 'current'
+      targetPath: '$(Pipeline.Workspace)'
+  - script: dir $(Pipeline.Workspace)/drop
+  - task: AzurePowerShell@5
+    name: ${{ parameters.taskName }}
+    enabled: true
+    inputs:
+      azureSubscription: ${{ parameters.serviceConnection }}
+      ScriptType: 'InlineScript'
+      Inline: |
+        Set-AzContext -Subscription ${{ parameters.subscriptionId }}
+        $rgParameters = @{
+            Name = "${{ parameters.name }}"
+            Location = '${{ parameters.location }}'
+            Force = $true
+        }
+        New-AzResourceGroup @rgParameters
+      azurePowerShellVersion: 'LatestVersion'

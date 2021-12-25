@@ -1,0 +1,63 @@
+parameters:
+  serviceConnection: ''
+  subscriptionId: ''
+  jobName: ''
+  taskName: ''
+  resourceGroup: ''
+  location: ''
+  hostpoolName: '' 
+  hostpoolDescription: ''
+  hostPoolType: ''
+  loadBalancerType: '' 
+  preferredAppGroupType: '' 
+  validationEnvironment: ''
+  startVMOnConnect: ''
+  personalDesktopAssignmentType: ''
+  maxSessionLimit: ''
+  startOnConnectRoleName: ''
+  prefix: ''
+  appGroupName: ''
+  appGroupFriendlyName: ''
+  appGroupDescription: ''
+  appGroupType: ''
+  workspaceName: ''
+  workspaceFriendlyName: ''
+  workspaceDescription: ''
+  
+
+
+jobs:
+- job: ${{ parameters.jobName }}
+  steps:
+  - task: DownloadPipelineArtifact@2
+    inputs:
+      buildType: 'current'
+      targetPath: '$(Pipeline.Workspace)'
+  - task: AzurePowerShell@5
+    name: ${{ parameters.taskName }}
+    enabled: true
+    inputs:
+      azureSubscription: ${{ parameters.ServiceConnection }}
+      ScriptType: 'FilePath'
+      ScriptPath: '$(Pipeline.Workspace)/drop/Scripts/deploy-avd-resources.ps1'
+      ScriptArguments: "
+        -subscriptionId ${{ parameters.subscriptionId }}
+        -resourceGroup ${{ parameters.resourceGroup }}
+        -location '${{ parameters.location }}' 
+        -hostpoolName '${{ parameters.hostpoolName }}'
+        -hostpoolDescription' ${{ parameters.hostpoolDescription }}'
+        -hostPoolType '${{ parameters.hostPoolType }}'
+        -loadBalancerType '${{ parameters.loadBalancerType }}' 
+        -preferredAppGroupType '${{ parameters.preferredAppGroupType }}'
+        -personalDesktopAssignmentType '${{ parameters.personalDesktopAssignmentType }}'
+        -maxSessionLimit '${{ parameters.maxSessionLimit }}'
+        -startOnConnectRoleName '${{ parameters.startOnConnectRoleName }}'
+        -appGroupName '${{ parameters.appGroupName }}'
+        -appGroupFriendlyName '${{ parameters.appGroupFriendlyName }}'
+        -appGroupDescription '${{ parameters.appGroupDescription }}'
+        -appGroupType '${{ parameters.appGroupType }}'
+        -workspaceName '${{ parameters.workspaceName }}'
+        -workspaceFriendlyName '${{ parameters.workspaceFriendlyName }}'
+        -workspaceDescription '${{ parameters.workspaceDescription }}'"
+      errorActionPreference: 'stop'
+      azurePowerShellVersion: 'LatestVersion'

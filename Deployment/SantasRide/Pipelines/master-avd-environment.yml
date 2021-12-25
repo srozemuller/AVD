@@ -1,0 +1,131 @@
+trigger: none
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+    resourceGroup: "Santas-Tree-Ride"
+    location: "WestEurope"
+    subscriptionId: '398c5aee-6356-47fa-b141-2251e85cdb97'
+    serviceConnection: "rozemuller"
+    major: $(Get-Date -format yyyy)  
+    minor: $(Get-Date -format MMdd)  
+    patch: $[counter(variables['minor'], 0)]
+
+resources:
+  repositories:
+  - repository: Rozemuller
+    type: git
+    name: Rozemuller/Rozemuller
+
+stages:
+- stage: BuildUp
+  jobs:
+  - job: SetBuildNumber
+    displayName: Change Buildnumber
+    steps:
+    - powershell: |
+        write-host "##vso[build.updatebuildnumber]$(major).$(minor).$(patch)"
+        write-host "##vso[task.setvariable variable=Number;isOutput=true]$(major).$(minor).$(patch)"
+      name: SetMasterBuildName
+  - job: CreateArtifact
+    steps:
+     - checkout: Rozemuller
+     - script: dir
+     - task: CopyFiles@2
+       displayName: 'Copy Scripts to Staging '
+       inputs:
+        SourceFolder: SantasRide
+        Contents: '**'
+        TargetFolder: '$(build.artifactstagingdirectory)/drop'
+        CleanTargetFolder: false
+     - publish:  '$(build.artifactstagingdirectory)/drop'
+       artifact: drop
+- stage: BuildResourceGroup
+  dependsOn:
+    - BuildUp
+  jobs:
+  - template: 'SantasRide/Pipelines/deploy-resourcegroup.yml@Rozemuller'
+    parameters:
+      serviceConnection: $(serviceConnection)
+      subscriptionId: $(subscriptionId)
+      jobName: deployRG
+      taskName: 'rgTask'
+      name: $(resourceGroup)
+      location: $(location)
+- stage: BuildNetwork
+  dependsOn:
+    - BuildResourceGroup
+  jobs:
+  - template: 'SantasRide/Pipelines/deploy-network-resources.yml@Rozemuller'
+    parameters:
+      serviceConnection: $(serviceConnection)
+      subscriptionId: $(subscriptionId)
+      jobName: deployNetwork
+      taskName: 'networkTask'
+      resourceGroup: $(resourceGroup)
+      location: $(location)
+      nsgName: 'nsg-avd'
+      subnetName: 'avd'
+      subnetPrefix: '10.0.1.0/24'
+      vnetName: 'vnet-candy-tree'
+      vnetPrefix: '10.0.0.0/16'
+- stage: BuildAvd
+  dependsOn:
+    - BuildNetwork
+  jobs:
+  - template: 'SantasRide/Pipelines/deploy-avd-resources.yml@Rozemuller'
+    parameters:
+      serviceConnection: $(serviceConnection)
+      subscriptionId: $(subscriptionId)
+      jobName: deployAVD
+      taskName: 'avdTask'
+      resourceGroup: $(resourceGroup)
+      location: $(location)
+      hostpoolName: "Santas-Pool"
+      hostpoolDescription: "A Santas Ride Pool"
+      hostPoolType: "Personal"
+      loadBalancerType: "BreadthFirst"
+      preferredAppGroupType: "Desktop"
+      validationEnvironment: 1
+      startVMOnConnect: 1
+      personalDesktopAssignmentType: "Automatic"
+      maxSessionLimit: 1
+      startOnConnectRoleName: "Start-VM-On-Connect"
+      prefix: "AVD-AAD"
+      appGroupName: "Candy-Tree"
+      appGroupFriendlyName: "Candy Tree"
+      appGroupDescription: "Apps with candy taste"
+      appGroupType:  "Desktop"
+      workspaceName:  "wp-tree"
+      workspaceFriendlyName:  "Christmas Trees"
+      workspaceDescription:  "A space in the trees"
+- stage: BuildSessionhosts
+  dependsOn:
+    - BuildAvd
+    - BuildNetwork
+  variables:
+    SubnetId: $[ stageDependencies.BuildNetwork.deployNetwork.outputs['networkTask.subnetId'] ]
+    hostpoolName: $[ stageDependencies.BuildAvd.deployAvd.outputs['avdTask.hostpoolName'] ]
+    hostpoolResourceGroup: $[ stageDependencies.BuildAvd.deployAvd.outputs['avdTask.hostpoolResourceGroup'] ]
+  jobs:
+  - template: 'SantasRide/Pipelines/deploy-avd-sessionhosts.yml@Rozemuller'
+    parameters:
+      serviceConnection: $(serviceConnection)
+      subscriptionId: $(subscriptionId)
+      jobName: deploySessionHost
+      taskName: 'hostTask'
+      location: $(location)
+      hostpoolName: $(hostpoolName)
+      HostpoolResourceGroup: $(hostpoolResourceGroup)
+      ResourceGroupName: $(resourceGroup)
+      VmSize: "Standard_D2s_v3"
+      SessionHostCount: 1
+      Prefix: "AVD"
+      Publisher: "MicrosoftWindowsDesktop"
+      Offer: "windows-10"
+      Sku: "21h1-ent-g2"
+      LocalAdmin: "ladmin"
+      LocalPass: "&B23(Crw@cas"
+      SubnetId: $(subnetId)
+      DiskType: "Standard_LRS"

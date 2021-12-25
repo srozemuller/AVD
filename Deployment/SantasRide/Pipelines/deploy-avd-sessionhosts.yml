@@ -1,0 +1,54 @@
+parameters:
+    serviceConnection: ''
+    subscriptionId: ''
+    jobName: ''
+    taskName: ''
+    location: ''
+    hostpoolName: ''
+    HostpoolResourceGroup: ''
+    ResourceGroupName: ''
+    SessionHostCount: ''
+    Prefix: ''
+    Publisher: ''
+    Offer: ''
+    Sku: ''
+    LocalAdmin: ''
+    LocalPass: ''
+    SubnetId: ''
+    VmSize: ''
+    DiskType: ''
+  
+
+
+jobs:
+- job: ${{ parameters.jobName }}
+  steps:
+  - task: DownloadPipelineArtifact@2
+    inputs:
+      buildType: 'current'
+      targetPath: '$(Pipeline.Workspace)'
+  - task: AzurePowerShell@5
+    name: ${{ parameters.taskName }}
+    enabled: true
+    inputs:
+      azureSubscription: ${{ parameters.ServiceConnection }}
+      ScriptType: 'FilePath'
+      ScriptPath: '$(Pipeline.Workspace)/drop/Scripts/deploy-avd-sessionhost.ps1'
+      ScriptArguments: "
+        -subscriptionId ${{ parameters.subscriptionId }} 
+        -location '${{ parameters.location }}' 
+        -hostpoolName '${{ parameters.hostpoolName }}'
+        -HostpoolResourceGroup '${{ parameters.HostpoolResourceGroup }}'
+        -ResourceGroupName '${{ parameters.ResourceGroupName }}'
+        -SessionHostCount '${{ parameters.SessionHostCount }}'
+        -Prefix '${{ parameters.Prefix }}'
+        -Publisher '${{ parameters.Publisher }}'
+        -Offer '${{ parameters.Offer }}'
+        -Sku '${{ parameters.Sku }}'
+        -LocalAdmin '${{ parameters.LocalAdmin }}'
+        -LocalPass '${{ parameters.LocalPass }}'
+        -SubnetId '${{ parameters.SubnetId }}'
+        -VmSize '${{ parameters.VmSize }}'
+        -DiskType '${{ parameters.DiskType }}'"
+      errorActionPreference: 'stop'
+      azurePowerShellVersion: 'LatestVersion'
