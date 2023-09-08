@@ -1,17 +1,18 @@
-//Define Log Analytics parameters
-param logAnalyticsWorkspaceName string
-param logAnalyticsWorkspaceSku string 
+// Define Log Analytics parameters
+param workspaceName string
+param workspaceSku string
+param location string
 
-
-//Create Log Analytics Workspace
-resource avdla 'Microsoft.OperationalInsights/workspaces@2020-08-01' = {
-  name: logAnalyticsWorkspaceName
-  location: resourceGroup().location
+// Create Log Analytics Workspace
+resource avdla 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
+  name: workspaceName
+  location: location
   properties: {
     sku: {
-      name: logAnalyticsWorkspaceSku
+      name: workspaceSku
     }
   }
 }
 
-output laWorkspaceId string = avdla.id
+
+output workspaceId string = avdla.id

@@ -2,10 +2,10 @@
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "logAnalyticsWorkspaceName": {
+        "laWorkspaceName": {
             "value": "MintyWorkspace"
         },
-        "logAnalyticsWorkspaceSku": {
+        "laWorkspaceSku": {
             "value": "pergb2018"
         },
         "hostpoolName": {
@@ -19,9 +19,16 @@
                 "categories": [
                     "Checkpoint",
                     "Error",
-                    "Management",
                     "Connection",
-                    "HostRegistration"
+                    "HostRegistration",
+                    "AgentHealthStatus"
+                ]
+            }
+        },
+        "appGroupLogs": {
+            "value": {
+                "categories": [
+                    "Error"
                 ]
             }
         },

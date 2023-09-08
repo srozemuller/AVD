@@ -44,21 +44,17 @@ param secretsPermissions array = [
 @description('Specifies whether the key vault is a standard vault or a premium vault.')
 param skuName string
 
-param vmJoinerPassword string
 
-@secure()
 @description('Specifies all secrets {"secretName":"","secretValue":""} wrapped in a secure object.')
-param secretsObject object = {
-  secrets: [
-    // either edit this section with your secrets, or add them as parameters you can define. 
-    {
-      secretName: 'vmJoinerPassword'
-      secretValue: vmJoinerPassword
-    }
-  ]
-}
+param secretsObject object
 
-resource vault 'Microsoft.KeyVault/vaults@2019-09-01' = {
+@description('Specifies the role definition id for the role assignment. Default: Azure Key Vault Secrets User')
+param roleDefinitionId string = '4633458b-17de-408a-b874-0445c86b69e6'
+
+@description('Specifies the principal id for the role assignment.')
+param principalId string
+
+resource vault 'Microsoft.KeyVault/vaults@2023-02-01' = {
   name: keyVaultName
   location: location
   tags: {
@@ -68,17 +64,9 @@ resource vault 'Microsoft.KeyVault/vaults@2019-09-01' = {
     enabledForDeployment: enabledForDeployment
     enabledForTemplateDeployment: enabledForTemplateDeployment
     enabledForDiskEncryption: enabledForDiskEncryption
+    enableRbacAuthorization: true
     tenantId: tenantId
-    accessPolicies: [
-      {
-        objectId: objectId
-        tenantId: tenantId
-        permissions: {
-          keys: keysPermissions
-          secrets: secretsPermissions
-        }
-      }
-    ]
+    accessPolicies: []
     sku: {
       name: skuName
       family: 'A'
@@ -96,3 +84,19 @@ resource secrets 'Microsoft.KeyVault/vaults/secrets@2018-02-14' = [for secret in
     value: secret.secretValue
   }
 }]
+
+@description('the role deffinition is collected')
+resource roleDefinition 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
+  scope: resourceGroup()
+  name: roleDefinitionId
+}
+
+resource rbacAccess 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid('${vault.name}-${roleDefinitionId}-${principalId}')
+  scope: vault
+  properties: {
+    principalId: principalId
+    principalType: 'User'
+    roleDefinitionId: roleDefinition.id
+  }
+}

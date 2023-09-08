@@ -1,0 +1,31 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "value": "westeurope"
+        },
+        "vmSize": {
+            "value": "Standard_D2s_v3"
+        },
+        "vmOs": {
+            "value": "20h2-ent-g2"
+        },
+        "vmOffer":{
+            "value": "Windows-10"
+        },
+        "vnetAddressPrefix": {
+            "value": "10.0.0.0/15"
+        },
+        "vnetSubnets": {
+            "value": {
+                "subnets": [
+                    {
+                        "name": "DefaultSubnet",
+                        "addressPrefix": "10.0.0.0/24"
+                    }
+                ]
+            }
+        }
+    }
+}
