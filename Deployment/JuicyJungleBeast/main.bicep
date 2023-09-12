@@ -126,7 +126,7 @@ resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   location: location
 }
 
-module logAnalyics 'LogAnalytics/deploy-LogAnalytics.bicep' = {
+module logAnalyics 'Templates/LogAnalytics/deploy-LogAnalytics.bicep' = {
   name: 'deploy-log-analytics'
   scope: resourceGroup
   params: {
@@ -136,7 +136,7 @@ module logAnalyics 'LogAnalytics/deploy-LogAnalytics.bicep' = {
   }
 }
 
-module vnets 'Network/deploy-vnet-with-subnet.bicep' = {
+module vnets 'Templates/Network/deploy-vnet-with-subnet.bicep' = {
   name: 'deploy-vnet'
   scope: resourceGroup
   params: {
@@ -148,7 +148,7 @@ module vnets 'Network/deploy-vnet-with-subnet.bicep' = {
   }
 }
 
-module computeGallery 'ComputeGallery/deploy-shared-image-gallery.bicep' = {
+module computeGallery 'Templates/ComputeGallery/deploy-shared-image-gallery.bicep' = {
   name: 'deploy-gallery'
   scope: resourceGroup
   params: {
@@ -167,7 +167,7 @@ module computeGallery 'ComputeGallery/deploy-shared-image-gallery.bicep' = {
 }
 
 
-module avdEnvironment 'AVD/deploy-avd-environment.bicep' = {
+module avdEnvironment 'Templates/AVD/deploy-avd-environment.bicep' = {
   name: 'deploy-avd-environment'
   scope: resourceGroup
   dependsOn: [
@@ -190,7 +190,7 @@ module avdEnvironment 'AVD/deploy-avd-environment.bicep' = {
   }
 }
 
-module avdSessionhosts 'AVD/deploy-avd-sessionhosts.bicep' = {
+module avdSessionhosts 'Templates/AVD/deploy-avd-sessionhosts.bicep' = {
   name: 'deploy-avd-sessionhosts'
   scope: resourceGroup
   dependsOn: [
@@ -217,7 +217,7 @@ module avdSessionhosts 'AVD/deploy-avd-sessionhosts.bicep' = {
 }
 
 
-module avdDiagnostics 'AVD/deploy-avd-diagnostics.bicep' = {
+module avdDiagnostics 'Templates/AVD/deploy-avd-diagnostics.bicep' = {
   name: 'deploy-avd-diagnostics'
   scope: resourceGroup
   dependsOn: [
@@ -236,7 +236,7 @@ module avdDiagnostics 'AVD/deploy-avd-diagnostics.bicep' = {
 }
 
 
-module keyVault 'KeyVault/deploy-keyvault-with-secret.bicep' = {
+module keyVault 'Templates/KeyVault/deploy-keyvault-with-secret.bicep' = {
   name: 'deploy-keyvault'
   scope: resourceGroup
   dependsOn: [
