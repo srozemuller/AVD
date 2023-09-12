@@ -60,10 +60,10 @@ param hostpoolName string
 
 
 @description('IMPORTANT: Please don\'t use this parameter as AAD Join is not supported yet. True if AAD Join, false if AD join')
-param aadJoin bool
+param aadJoin string
 
 @description('IMPORTANT: Please don\'t use this parameter as intune enrollment is not supported yet. True if intune enrollment is selected.  False otherwise')
-param intune bool = false
+param intune string
 @description('The tags to be assigned to the virtual machines')
 param virtualMachineTags object = {}
 
@@ -108,7 +108,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2023-03-01' = [for i in range(0, 
   location: location
   tags: virtualMachineTags
   identity: {
-    type: (aadJoin ? 'SystemAssigned' : 'None')
+    type: (aadJoin == 'true' ? 'SystemAssigned' : 'None')
   }
   properties: {
     hardwareProfile: {
@@ -179,7 +179,7 @@ resource vm_DSC 'Microsoft.Compute/virtualMachines/extensions@2023-03-01' = [for
   ]
 }]
 
-resource vm_AADLoginForWindows 'Microsoft.Compute/virtualMachines/extensions@2023-03-01' = [for i in range(0, rdshNumberOfInstances): if (aadJoin && !intune) {
+resource vm_AADLoginForWindows 'Microsoft.Compute/virtualMachines/extensions@2023-03-01' = [for i in range(0, rdshNumberOfInstances): if (aadJoin == 'true' && intune == 'false') {
   name: '${rdshPrefix}${(i + rdshInitialNumber)}-vm/AADLoginForWindows'
   location: location
   properties: {
@@ -193,7 +193,7 @@ resource vm_AADLoginForWindows 'Microsoft.Compute/virtualMachines/extensions@202
   ]
 }]
 
-resource vm_AADLoginForWindowsWithIntune 'Microsoft.Compute/virtualMachines/extensions@2023-03-01' = [for i in range(0, rdshNumberOfInstances): if (aadJoin && intune) {
+resource vm_AADLoginForWindowsWithIntune 'Microsoft.Compute/virtualMachines/extensions@2023-03-01' = [for i in range(0, rdshNumberOfInstances): if (aadJoin == 'true' && intune == 'true') {
   name: '${rdshPrefix}${(i + rdshInitialNumber)}-vm/AADLoginForWindowsWithIntune'
   location: location
   properties: {
