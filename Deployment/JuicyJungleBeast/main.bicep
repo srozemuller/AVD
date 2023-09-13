@@ -113,8 +113,8 @@ param availabilityZone int
 param availabilitySetName string
 param availabilityOption string
 
-param aadJoin bool = true
-param intune bool = false
+param aadJoin string = 'true'
+param intune string = 'false'
 
 // Key Vault Parameters
 param keyVaultUserId string
