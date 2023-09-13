@@ -55,12 +55,6 @@
         "description": "What is the Compute Gallery image publisher"
       }
     },
-    "imageSource": {
-      "type": "string",
-      "metadata": {
-        "description": "What is the Compute Gallery image source, resourceId"
-      }
-    },
     "hyperVGeneration": {
       "type": "string",
       "metadata": {
@@ -457,9 +451,6 @@
           "versionName": {
             "value": "[variables('versionName')]"
           },
-          "imageSource": {
-            "value": "[parameters('imageSource')]"
-          },
           "hyperVGeneration": {
             "value": "[parameters('hyperVGeneration')]"
           },
@@ -552,12 +543,6 @@
               "metadata": {
                 "description": "What is the version name in SemVer format x.x.x"
               }
-            },
-            "imageSource": {
-              "type": "string",
-              "metadata": {
-                "description": "What is the source image/disk resource id"
-              }
             }
           },
           "resources": [
@@ -584,30 +569,6 @@
               },
               "dependsOn": [
                 "[resourceId('Microsoft.Compute/galleries', parameters('galleryName'))]"
-              ]
-            },
-            {
-              "type": "Microsoft.Compute/galleries/images/versions",
-              "apiVersion": "2022-03-03",
-              "name": "[format('{0}/{1}/{2}', parameters('galleryName'), parameters('imageDefinitionName'), parameters('versionName'))]",
-              "location": "[parameters('location')]",
-              "tags": {},
-              "properties": {
-                "publishingProfile": {
-                  "replicaCount": 1
-                },
-                "storageProfile": {
-                  "source": {
-                    "id": "[parameters('imageSource')]"
-                  },
-                  "osDiskImage": {
-                    "hostCaching": "ReadWrite"
-                  }
-                }
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.Compute/galleries', parameters('galleryName'))]",
-                "[resourceId('Microsoft.Compute/galleries/images', parameters('galleryName'), parameters('imageDefinitionName'))]"
               ]
             }
           ],
