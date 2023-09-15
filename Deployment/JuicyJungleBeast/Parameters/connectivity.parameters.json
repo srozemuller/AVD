@@ -1,0 +1,49 @@
+{
+    "nsgResources": {
+        "value": {
+            "nsgs": [
+                {
+                    "name": "nsg-devHostpool"
+                },
+                {
+                    "name": "nsg-prdHostpool"
+                }
+            ]
+        }
+    },
+    "vnetResources": {
+        "value": {
+            "vnets": [
+                {
+                    "name": {
+                        "value": "vnet-hubNetwork"
+                    },
+                    "resourceGroup": {
+                     "value": "hub-connectivity"
+                    },
+                    "addressPrefix": {
+                        "value": "10.0.0.0/15"
+                    },
+                    "subnets": {
+                        "value": {
+                            "subnets": [
+                                {
+                                    "name": "DefaultSubnet",
+                                    "addressPrefix": "10.0.0.0/24"
+                                },
+                                {
+                                    "name": "devspoke-subnet",
+                                    "addressPrefix": "10.0.10.0/24"
+                                },
+                                {
+                                    "name": "prdspoke-subnet",
+                                    "addressPrefix": "10.0.20.0/24"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}

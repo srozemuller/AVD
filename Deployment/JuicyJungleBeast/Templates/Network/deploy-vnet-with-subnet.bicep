@@ -1,45 +1,27 @@
 param location string = resourceGroup().location
-param vnetName string
-param vnetAddressPrefix string
+param vnetResources object
+param nsgResources object
 
-param vnetSubnets object
-
-param nsgName string
-
-var subnets = [for item in vnetSubnets.subnets: {
-  name: item.name
-  properties: {
-    addressPrefix: item.addressPrefix
-    networkSecurityGroup: {
-      id: nsg.id
-    }
-  }
-}]
-
-
-resource nsg 'Microsoft.Network/networkSecurityGroups@2023-04-01' = {
-  name: nsgName
+resource networkSecGroups 'Microsoft.Network/networkSecurityGroups@2023-04-01' = [for nsg in nsgResources.nsgs: {
+  name: nsg.name
   location: location
   properties: {
     securityRules: []
   }
-}
+}]
 
 
-resource vnet 'Microsoft.Network/virtualNetworks@2023-04-01' = {
-  name: vnetName
+resource virtualNetworks 'Microsoft.Network/virtualNetworks@2023-04-01' = [for vnet in vnetResources.vnets: {
+  name: vnet.name
   location: location
   properties: {
     addressSpace: {
       addressPrefixes: [
-        vnetAddressPrefix
+        vnet.addresprefix
       ]
     }
     enableVmProtection: false
     enableDdosProtection: false
-    subnets: subnets
+    subnets: vnet.subnets
   }
-}
-
-output vnetId string = vnet.id
-output subnetId string = vnet.properties.subnets[0].id
+}]
