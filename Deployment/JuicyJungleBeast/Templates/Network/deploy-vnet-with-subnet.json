@@ -1,0 +1,58 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.21.1.54444",
+      "templateHash": "6547161437377392213"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "vnetResources": {
+      "type": "object"
+    },
+    "nsgResources": {
+      "type": "object"
+    }
+  },
+  "resources": [
+    {
+      "copy": {
+        "name": "networkSecGroups",
+        "count": "[length(parameters('nsgResources').nsgs)]"
+      },
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2023-04-01",
+      "name": "[parameters('nsgResources').nsgs[copyIndex()].name]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "securityRules": []
+      }
+    },
+    {
+      "copy": {
+        "name": "virtualNetworks",
+        "count": "[length(parameters('vnetResources').vnets)]"
+      },
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2023-04-01",
+      "name": "[parameters('vnetResources').vnets[copyIndex()].name]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[parameters('vnetResources').vnets[copyIndex()].addresprefix]"
+          ]
+        },
+        "enableVmProtection": false,
+        "enableDdosProtection": false,
+        "subnets": "[parameters('vnetResources').vnets[copyIndex()].subnets]"
+      }
+    }
+  ]
+}
