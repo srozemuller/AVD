@@ -1,0 +1,30 @@
+{
+    "displayName": "AVD - Clipboard direction",
+    "description": "Clipboard redirection settings for AVD",
+    "roleScopeTagIds": [
+        "0"
+    ],
+    "deviceManagementApplicabilityRuleOsVersion": {
+        "minOSVersion": "25898.0000",
+        "maxOSVersion": "26052.1100",
+        "name": null,
+        "ruleType": "include"
+    },
+    "@odata.type": "#microsoft.graph.windows10CustomConfiguration",
+    "omaSettings": [
+        {
+            "omaUri": "./Vendor/MSFT/Policy/Config/RemoteDesktopServices/LimitServerToClientClipboardRedirection",
+            "@odata.type": "#microsoft.graph.omaSettingString",
+            "displayName": "From session host to end user client",
+            "description": "No clipfrom from session host to client",
+            "value": "<![CDATA[<enabled/><data id=\"TS_SC_CLIPBOARD_RESTRICTION_Text\" value=\"0\"/>]]>"
+        },
+        {
+            "omaUri": "./Vendor/MSFT/Policy/Config/RemoteDesktopServices/LimitClientToServerClipboardRedirection",
+            "@odata.type": "#microsoft.graph.omaSettingString",
+            "displayName": "From end user client to session host",
+            "description": "Only allow text and image to session host",
+            "value": "<![CDATA[<enabled/><data id=\"TS_CS_CLIPBOARD_RESTRICTION\" value=\"2\"/>]]>"
+        }
+    ]
+}
